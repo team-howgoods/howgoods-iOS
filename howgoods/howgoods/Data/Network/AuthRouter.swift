@@ -13,8 +13,7 @@ enum AuthRouter: URLRequestConvertible {
     
     /// Apple 로그인 요청 (authorization code 전송)
     case loginWithApple(code: String)
-    
-    // TODO: case loginWithGoogle(token: String)
+    case loginWithNaver(code: String)
     // TODO: case loginWithKakao(token: String)
 
     var method: HTTPMethod { .post }
@@ -22,7 +21,10 @@ enum AuthRouter: URLRequestConvertible {
     var path: String {
         switch self {
         case .loginWithApple:
-            return "/api/auth/apple/callback"
+            return "api/auth/apple/callback"
+        
+        case .loginWithNaver:
+            return "api/auth/naver/callback"
         // TODO: case .loginWithNaver:
         //   return "/api/auth/naver"
         }
@@ -30,13 +32,13 @@ enum AuthRouter: URLRequestConvertible {
 
     func asURLRequest() throws -> URLRequest {
         let url = Bundle.main.baseAPIURL
-        
+
         var request = URLRequest(url: url.appendingPathComponent(path))
         request.method = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         switch self {
-        case .loginWithApple(let code):
+        case .loginWithApple(let code), .loginWithNaver(let code):
             request.httpBody = try JSONEncoder().encode(["code": code])
         }
 

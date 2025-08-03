@@ -10,6 +10,7 @@ import RxSwift
 import Alamofire
 
 final class AuthNetworkService: AuthNetworkServiceProtocol {
+    
     func loginWithApple(code: String) -> Observable<Result<AuthToken, Error>> {
         return Observable.create { observer in
             let router = AuthRouter.loginWithApple(code: code)
@@ -30,7 +31,25 @@ final class AuthNetworkService: AuthNetworkServiceProtocol {
         }
     }
     
-    // TODO: loginWithNaver
+    func loginWithNaver(code: String) -> Observable<Result<AuthToken, Error>> {
+        return Observable.create { observer in
+            let router = AuthRouter.loginWithNaver(code: code)
+
+            AF.request(router)
+                .validate()
+                .responseDecodable(of: AuthToken.self) { response in
+                    switch response.result {
+                    case .success(let token):
+                        observer.onNext(.success(token))
+                    case .failure(let error):
+                        observer.onNext(.failure(error))
+                    }
+                    observer.onCompleted()
+                }
+
+            return Disposables.create()
+        }
+    }
     
     // TODO: loginWithKakao
 }

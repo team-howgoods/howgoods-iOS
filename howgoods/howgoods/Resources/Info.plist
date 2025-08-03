@@ -2,8 +2,32 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NidUrlScheme</key>
+	<string>$(NidUrlScheme)</string>
 	<key>BASE_API_URL</key>
 	<string>$(BASE_API_URL)</string>
+	<key>NidAppName</key>
+	<string>$(NidAppName)</string>
+	<key>NidClientID</key>
+	<string>$(NidClientID)</string>
+	<key>NidClientSecret</key>
+	<string>$(NidClientSecret)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>naver</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(NidUrlScheme)</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>naversearchapp</string>
+		<string>naversearchthirdlogin</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

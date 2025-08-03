@@ -13,6 +13,7 @@ import Foundation
 
 protocol LoginViewModelInput {
     var appleLoginTapped: PublishRelay<Void> { get }
+    var naverLoginTapped: PublishRelay<Void> { get }
     // TODO: var naverLoginTapped: PublishRelay<Void> { get }
 }
 
@@ -26,6 +27,7 @@ final class LoginViewModel: LoginViewModelInput, LoginViewModelOutput {
 
     // MARK: - Input
     let appleLoginTapped = PublishRelay<Void>()
+    let naverLoginTapped = PublishRelay<Void>()
 
     // MARK: - Output
     let loginResult: Driver<Result<String, Error>>
@@ -41,7 +43,13 @@ final class LoginViewModel: LoginViewModelInput, LoginViewModelOutput {
         let result = PublishRelay<Result<String, Error>>()
 
         appleLoginTapped
-            .map { LoginType.apple } // 명시적으로 Apple 타입 전달
+            .map { LoginType.apple }
+            .flatMapLatest { loginUseCase.execute(type: $0) }
+            .bind(to: result)
+            .disposed(by: disposeBag)
+        
+        naverLoginTapped
+            .map { LoginType.naver }
             .flatMapLatest { loginUseCase.execute(type: $0) }
             .bind(to: result)
             .disposed(by: disposeBag)

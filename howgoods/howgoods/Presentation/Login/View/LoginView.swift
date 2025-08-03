@@ -19,10 +19,15 @@ final class LoginView: UIView {
         $0.translatesAutoresizingMaskIntoConstraints = false
     }
     
+    private let naverLoginButton = UIButton().then {
+        $0.setImage(UIImage(named: "NaverLoginButton_G"), for: .normal)
+    }
+    
     // MARK: - Getter
     var getAppleLoginButton: ASAuthorizationAppleIDButton {
         return appleLoginButton
     }
+    var getNaverLoginButton: UIButton { naverLoginButton }
 
     // MARK: - Initializer
     override init(frame: CGRect) {
@@ -50,7 +55,8 @@ private extension LoginView {
     // MARK: - setHierarchy
     func setHierarchy() {
         addSubviews(
-            appleLoginButton
+            appleLoginButton,
+            naverLoginButton
         )
     }
     
@@ -63,7 +69,14 @@ private extension LoginView {
     func setConstraints() {
         appleLoginButton.snp.makeConstraints {
             $0.centerX.equalToSuperview()
+            $0.height.equalTo(50)
+            $0.width.equalTo(280)
+        }
+        
+        naverLoginButton.snp.makeConstraints {
+            $0.top.equalTo(appleLoginButton.snp.bottom).offset(16)
             $0.bottom.equalToSuperview().inset(40)
+            $0.centerX.equalToSuperview()
             $0.height.equalTo(50)
             $0.width.equalTo(280)
         }

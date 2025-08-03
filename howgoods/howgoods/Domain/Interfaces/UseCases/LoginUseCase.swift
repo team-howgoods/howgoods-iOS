@@ -11,14 +11,16 @@ import Foundation
 final class LoginUseCase: LoginUseCaseProtocol {
 
     private let appleAuthRepository: AuthRepository
-    // TODO: private let naverAuthRepository: AuthRepository
+    private let naverAuthRepository: AuthRepository
     // TODO: private let kakaoAuthRepository: AuthRepository
 
     init(
-        appleAuthRepository: AuthRepository
+        appleAuthRepository: AuthRepository,
+        naverAuthRepository: AuthRepository
         // TODO: naverAuthRepository: AuthRepository
     ) {
         self.appleAuthRepository = appleAuthRepository
+        self.naverAuthRepository = naverAuthRepository
     }
 
     func execute(type: LoginType) -> Observable<Result<String, Error>> {
@@ -29,6 +31,17 @@ final class LoginUseCase: LoginUseCaseProtocol {
                     switch result {
                     case .success(let code):
                         return self.appleAuthRepository.sendCodeToServer(code: code)
+                    case .failure(let error):
+                        return .just(.failure(error))
+                    }
+                }
+            
+        case .naver:
+            return naverAuthRepository.loginWithNaver()
+                .flatMap { result -> Observable<Result<String, Error>> in
+                    switch result {
+                    case .success(let accessToken):
+                        return self.naverAuthRepository.sendNaverCodeToServer(code: accessToken)
                     case .failure(let error):
                         return .just(.failure(error))
                     }

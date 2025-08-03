@@ -58,8 +58,15 @@ private extension LoginViewController {
     func setConstraints() { }
     func setActions() { }
     func setBinding() {
+        
+        // 애플 로그인 버튼 클릭
         loginView.getAppleLoginButton.rx.controlEvent(.touchUpInside)
             .bind(to: viewModel.appleLoginTapped)
+            .disposed(by: disposeBag)
+        
+        // 네이버 로그인 클릭
+        loginView.getNaverLoginButton.rx.tap
+            .bind(to: viewModel.naverLoginTapped)
             .disposed(by: disposeBag)
 
         viewModel.loginResult
