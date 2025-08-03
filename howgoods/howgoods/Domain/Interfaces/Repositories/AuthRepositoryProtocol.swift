@@ -9,5 +9,6 @@ import RxSwift
 
 protocol AuthRepositoryProtocol {
     func loginWithApple() -> Observable<Result<String, Error>>
+    func loginWithNaver() -> Observable<Result<String, Error>>
     func sendCodeToServer(code: String) -> Observable<Result<String, Error>>
 }
