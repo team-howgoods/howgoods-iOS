@@ -57,6 +57,21 @@ private extension LoginViewController {
     func setStyles() { }
     func setConstraints() { }
     func setActions() { }
-    func setBinding() { }
+    func setBinding() {
+        loginView.getAppleLoginButton.rx.controlEvent(.touchUpInside)
+            .bind(to: viewModel.appleLoginTapped)
+            .disposed(by: disposeBag)
+
+        viewModel.loginResult
+            .drive(onNext: { result in
+                switch result {
+                case .success(let token):
+                    print("로그인 성공: \(token)")
+                case .failure(let error):
+                    print("로그인 실패: \(error.localizedDescription)")
+                }
+            })
+            .disposed(by: disposeBag)
+    }
 }
 
