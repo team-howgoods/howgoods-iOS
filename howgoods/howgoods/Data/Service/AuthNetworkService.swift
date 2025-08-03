@@ -31,7 +31,6 @@ final class AuthNetworkService: AuthNetworkServiceProtocol {
         }
     }
     
-    // TODO: loginWithNaver
     func loginWithNaver(code: String) -> Observable<Result<AuthToken, Error>> {
         return Observable.create { observer in
             let router = AuthRouter.loginWithNaver(code: code)
@@ -51,7 +50,6 @@ final class AuthNetworkService: AuthNetworkServiceProtocol {
             return Disposables.create()
         }
     }
-
     
     // TODO: loginWithKakao
 }
