@@ -22,7 +22,7 @@ enum AuthRouter: URLRequestConvertible {
     var path: String {
         switch self {
         case .loginWithApple:
-            return "/api/auth/apple"
+            return "/api/auth/apple/callback"
         // TODO: case .loginWithNaver:
         //   return "/api/auth/naver"
         }
