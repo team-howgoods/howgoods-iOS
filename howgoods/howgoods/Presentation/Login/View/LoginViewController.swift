@@ -6,40 +6,45 @@
 //
 
 import UIKit
+import AuthenticationServices
+import RxSwift
+import RxCocoa
 
 final class LoginViewController: UIViewController {
     
     // MARK: - Properties
-    
-    //private let viewModel: <#ViewModel#>
-    
-    // MARK: - Lifecycle
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        configure()
-    }
+    private let loginView = LoginView()
+    private let viewModel: LoginViewModel
+    private let disposeBag = DisposeBag()
     
     // MARK: - Initializer
     
-    init() {
+    init(viewModel: LoginViewModel) {
+        self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
     
-    @available(*, unavailable, message: "compile error")
+    @available(*, unavailable, message: "Storyboard is not supported")
     required init?(coder: NSCoder) {
         fatalError()
     }
     
-    @objc
-    func didTapSomeButton(_ sender: UIButton) {
-        
+    // MARK: - Lifecycle
+    
+    override func loadView() {
+        self.view = loginView
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        configure()
     }
 }
 
 // MARK: - UI Methods
 
 private extension LoginViewController {
+    
     func configure() {
         setHierarchy()
         setStyles()
@@ -47,14 +52,11 @@ private extension LoginViewController {
         setActions()
         setBinding()
     }
-    // ...
     
-    // MARK: - setBinding
     func setHierarchy() { }
     func setStyles() { }
     func setConstraints() { }
     func setActions() { }
     func setBinding() { }
-    
 }
 
