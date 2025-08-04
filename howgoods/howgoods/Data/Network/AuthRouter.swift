@@ -11,10 +11,10 @@ import Foundation
 /// 인증 관련 API 요청의 스펙을 정의하는 라우터
 enum AuthRouter: URLRequestConvertible {
     
-    /// Apple 로그인 요청 (authorization code 전송)
+    /// 로그인 요청 (code 전송)
     case loginWithApple(code: String)
     case loginWithNaver(code: String)
-    // TODO: case loginWithKakao(token: String)
+    case loginWithKakao(code: String)
 
     var method: HTTPMethod { .post }
 
@@ -25,6 +25,9 @@ enum AuthRouter: URLRequestConvertible {
         
         case .loginWithNaver:
             return "api/auth/naver/callback"
+            
+        case .loginWithKakao:
+            return "api/auth/kakao/callback"
         // TODO: case .loginWithNaver:
         //   return "/api/auth/naver"
         }
@@ -38,7 +41,7 @@ enum AuthRouter: URLRequestConvertible {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         switch self {
-        case .loginWithApple(let code), .loginWithNaver(let code):
+        case .loginWithApple(let code), .loginWithNaver(let code), .loginWithKakao(let code):
             request.httpBody = try JSONEncoder().encode(["code": code])
         }
 
