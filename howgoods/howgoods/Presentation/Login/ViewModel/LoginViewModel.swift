@@ -14,7 +14,7 @@ import Foundation
 protocol LoginViewModelInput {
     var appleLoginTapped: PublishRelay<Void> { get }
     var naverLoginTapped: PublishRelay<Void> { get }
-    // TODO: var naverLoginTapped: PublishRelay<Void> { get }
+    var kakaoLoginTapped: PublishRelay<Void> { get }
 }
 
 protocol LoginViewModelOutput {
@@ -28,6 +28,7 @@ final class LoginViewModel: LoginViewModelInput, LoginViewModelOutput {
     // MARK: - Input
     let appleLoginTapped = PublishRelay<Void>()
     let naverLoginTapped = PublishRelay<Void>()
+    let kakaoLoginTapped = PublishRelay<Void>()
 
     // MARK: - Output
     let loginResult: Driver<Result<String, Error>>
@@ -50,6 +51,12 @@ final class LoginViewModel: LoginViewModelInput, LoginViewModelOutput {
         
         naverLoginTapped
             .map { LoginType.naver }
+            .flatMapLatest { loginUseCase.execute(type: $0) }
+            .bind(to: result)
+            .disposed(by: disposeBag)
+        
+        kakaoLoginTapped
+            .map { LoginType.kakao }
             .flatMapLatest { loginUseCase.execute(type: $0) }
             .bind(to: result)
             .disposed(by: disposeBag)
