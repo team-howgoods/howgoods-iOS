@@ -51,5 +51,23 @@ final class AuthNetworkService: AuthNetworkServiceProtocol {
         }
     }
     
-    // TODO: loginWithKakao
+    func loginWithKakao(code: String) -> Observable<Result<AuthToken, Error>> {
+        return Observable.create { observer in
+            let router = AuthRouter.loginWithNaver(code: code)
+
+            AF.request(router)
+                .validate()
+                .responseDecodable(of: AuthToken.self) { response in
+                    switch response.result {
+                    case .success(let token):
+                        observer.onNext(.success(token))
+                    case .failure(let error):
+                        observer.onNext(.failure(error))
+                    }
+                    observer.onCompleted()
+                }
+
+            return Disposables.create()
+        }
+    }
 }
