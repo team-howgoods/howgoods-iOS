@@ -17,4 +17,12 @@ extension Bundle {
         }
         return url
     }
+    
+    /// Info.plist에서 Kakao NATIVE_APP_KEY를 읽어오는 컴퓨티드 프로퍼티
+    var kakaoNativeAppKey: String {
+        guard let key = object(forInfoDictionaryKey: "NATIVE_APP_KEY") as? String else {
+            fatalError("NATIVE_APP_KEY가 Info.plist에 설정되어 있지 않습니다.")
+        }
+        return key
+    }
 }
