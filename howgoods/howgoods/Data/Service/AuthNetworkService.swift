@@ -28,7 +28,7 @@ final class AuthNetworkService: AuthNetworkServiceProtocol {
         return Observable.create { observer in
             AF.request(router)
                 .validate()
-                .responseDecodable(of: AuthResponse.self) { response in
+                .responseDecodable(of: AuthResponseDTO.self) { response in
                     
                     ///  Server Response 확인
                     if let data = response.data {
@@ -49,13 +49,37 @@ final class AuthNetworkService: AuthNetworkServiceProtocol {
                     }
                     
                     switch response.result {
-                    case .success(let authResponse):
-                        observer.onNext(.success(authResponse.data))
-
+                    case .success(let authResponseDTO):
+                        let domainModel = authResponseDTO.data.toDomain()
+                        observer.onNext(.success(domainModel))
+                        
                     case .failure(let error):
-                        observer.onNext(.failure(error))
+                        if let responseCode = response.response?.statusCode {
+                            switch responseCode {
+                            case 401:
+                                observer.onNext(.failure(NetworkError.unauthorized))
+                                observer.onCompleted()
+                                return
+                                
+                            case 408:
+                                observer.onNext(.failure(NetworkError.timeout))
+                                observer.onCompleted()
+                                return
+                                
+                            default:
+                                break
+                            }
+                        }
+                        
+                        if let data = response.data,
+                           let errorDTO = try? JSONDecoder().decode(ErrorResponseDTO.self, from: data) {
+                            observer.onNext(.failure(NetworkError.server(message: errorDTO.message)))
+                        } else {
+                            observer.onNext(.failure(NetworkError.unknown))
+                        }
+                        
+                        observer.onCompleted()
                     }
-                    observer.onCompleted()
                 }
 
             return Disposables.create()

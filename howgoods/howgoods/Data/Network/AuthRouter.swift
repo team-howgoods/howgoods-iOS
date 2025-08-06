@@ -28,8 +28,6 @@ enum AuthRouter: URLRequestConvertible {
             
         case .loginWithKakao:
             return "api/auth/kakao/callback"
-        // TODO: case .loginWithNaver:
-        //   return "/api/auth/naver"
         }
     }
 
@@ -42,7 +40,8 @@ enum AuthRouter: URLRequestConvertible {
 
         switch self {
         case .loginWithApple(let code), .loginWithNaver(let code), .loginWithKakao(let code):
-            request.httpBody = try JSONEncoder().encode(["code": code])
+            let dto = LoginRequestDTO(code: code)
+            request.httpBody = try JSONEncoder().encode(dto)
         }
 
         return request
