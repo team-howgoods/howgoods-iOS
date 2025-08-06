@@ -34,7 +34,7 @@ final class AuthRepository: AuthRepositoryProtocol {
             .map { result in
                 switch result {
                 case .success(let tokenEntity):
-                    return .success(tokenEntity.token)
+                    return .success(tokenEntity.accessToken)
                 case .failure(let error):
                     return .failure(error)
                 }
@@ -50,7 +50,7 @@ final class AuthRepository: AuthRepositoryProtocol {
             .map { result in
                 switch result {
                 case .success(let tokenEntity):
-                    return .success(tokenEntity.token)
+                    return .success(tokenEntity.accessToken)
                 case .failure(let error):
                     return .failure(error)
                 }
@@ -66,7 +66,7 @@ final class AuthRepository: AuthRepositoryProtocol {
             .map { result in
                 switch result {
                 case .success(let tokenEntity):
-                    return .success(tokenEntity.token)
+                    return .success(tokenEntity.accessToken)
                 case .failure(let error):
                     return .failure(error)
                 }
