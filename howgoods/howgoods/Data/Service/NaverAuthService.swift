@@ -9,25 +9,37 @@ import Foundation
 import RxSwift
 import NidThirdPartyLogin
 
+/// Naver 로그인 인증을 처리하는 서비스입니다.
+///
+/// 네이버 SDK(`NidThirdPartyLogin`)를 이용하여 로그인, 로그아웃, 연동 해제, 사용자 프로필 조회를 지원하며,
+/// 인증 결과는 `Observable<Result<...>>` 형태로 반환됩니다.
 final class NaverAuthService {
-
+    
+    /// 네이버 인증 전용 객체 (싱글톤)
     private let oauth = NidOAuth.shared
 
+    /// 초기화 시 로그인 방식을 설정합니다.
+    ///
+    /// 앱 로그인 우선 → 실패 시 인앱 브라우저로 fallback
     init() {
-        // 앱 preferred → 실패 시 인앱 브라우저
         oauth.setLoginBehavior(.appPreferredWithInAppBrowserFallback)
     }
 
-    /// 네이버 로그인 흐름
+    // MARK: - 인증 요청
+
+    /// 네이버 로그인 인증을 시작합니다.
+    ///
+    /// 이미 로그인 상태라면 로그아웃 후 다시 시도합니다.
+    ///
+    /// - Returns: 인증 성공 시 accessToken 문자열, 실패 시 Error를 포함한 `Result`
     func authorizeWithNaver() -> Observable<Result<String, Error>> {
         return Observable.create { observer in
             
-            // TODO: 네이버는 Firebase 처럼 토큰이 유지가 됌
-            if (self.oauth.refreshToken != nil) {
+            if self.oauth.accessToken != nil {
                 print("이미 로그인되어 있어 로그아웃 후 재시도합니다.")
                 self.oauth.logout()
             }
-            
+
             let currentToken = self.oauth.accessToken?.tokenString
             print("로그인 시도 직전 accessToken 상태: \(currentToken ?? "없음")")
             
@@ -49,8 +61,11 @@ final class NaverAuthService {
         }
     }
 
+    // MARK: - 로그아웃
 
-    /// 로그아웃
+    /// 네이버 로그아웃 요청
+    ///
+    /// - Returns: 완료 시 `Void` Observable
     func logout() -> Observable<Void> {
         return Observable.create { observer in
             self.oauth.logout()
@@ -60,7 +75,11 @@ final class NaverAuthService {
         }
     }
 
-    /// 연동 해제 (선택)
+    // MARK: - 연동 해제
+
+    /// 네이버 연동 해제를 요청합니다. (사용자 동의 필요)
+    ///
+    /// - Returns: 연동 해제 결과 (`Result<Void, NidError>`)
     func disconnect() -> Observable<Result<Void, NidError>> {
         return Observable.create { observer in
             self.oauth.disconnect { result in
@@ -71,7 +90,12 @@ final class NaverAuthService {
         }
     }
 
-    /// 프로필 조회 (선택)
+    // MARK: - 프로필 조회
+
+    /// 네이버 사용자 프로필 정보를 가져옵니다.
+    ///
+    /// - Parameter accessToken: 사용자 인증 토큰
+    /// - Returns: 프로필 정보 (`[String: String]`) 또는 오류
     func fetchProfile(accessToken: String) -> Observable<Result<[String: String], NidError>> {
         return Observable.create { observer in
             self.oauth.getUserProfile(accessToken: accessToken) { result in
@@ -82,4 +106,3 @@ final class NaverAuthService {
         }
     }
 }
-
