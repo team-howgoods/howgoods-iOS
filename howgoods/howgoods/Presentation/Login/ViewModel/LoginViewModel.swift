@@ -6,7 +6,7 @@
 //
 
 import RxSwift
-import RxCocoa
+import RxRelay
 import Foundation
 
 // MARK: - Input / Output Protocol
@@ -28,7 +28,7 @@ protocol LoginViewModelInput {
 protocol LoginViewModelOutput {
     
     /// 로그인 결과를 전달하는 드라이버 (accessToken or Error)
-    var loginResult: Driver<Result<String, Error>> { get }
+    var loginResult: Observable<Result<String, Error>> { get }
 }
 
 // MARK: - ViewModel
@@ -45,7 +45,7 @@ final class LoginViewModel: LoginViewModelInput, LoginViewModelOutput {
     let kakaoLoginTapped = PublishRelay<Void>()
 
     // MARK: - Output
-    let loginResult: Driver<Result<String, Error>>
+    let loginResult: Observable<Result<String, Error>>
 
     // MARK: - Dependencies
     private let loginUseCase: LoginUseCase
@@ -82,7 +82,6 @@ final class LoginViewModel: LoginViewModelInput, LoginViewModelOutput {
             .disposed(by: disposeBag)
 
         // 결과를 Output으로 노출 (에러 발생 시 기본값 반환)
-        self.loginResult = result
-            .asDriver(onErrorJustReturn: .failure(NSError(domain: "", code: -1)))
+        self.loginResult = result.asObservable()
     }
 }

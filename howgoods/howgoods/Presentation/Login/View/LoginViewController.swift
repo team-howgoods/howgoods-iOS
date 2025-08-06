@@ -106,6 +106,7 @@ private extension LoginViewController {
 
         // ViewModel Output: 로그인 결과 수신
         viewModel.loginResult
+            .asDriver(onErrorJustReturn: .failure(NSError(domain: "", code: -1)))
             .drive(onNext: { result in
                 switch result {
                 case .success(let token):
