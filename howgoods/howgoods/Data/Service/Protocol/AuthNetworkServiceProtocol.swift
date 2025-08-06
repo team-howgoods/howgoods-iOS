@@ -11,5 +11,5 @@ import RxSwift
 protocol AuthNetworkServiceProtocol {
     func loginWithApple(code: String) -> Observable<Result<AuthToken, Error>>
     func loginWithNaver(code: String) -> Observable<Result<AuthToken, Error>>
-    // TODO: loginWithNaver(token: String), loginWithKakao(token: String)
+    func loginWithKakao(code: String) -> Observable<Result<AuthToken, Error>>
 }

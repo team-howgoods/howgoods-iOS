@@ -12,15 +12,16 @@ final class LoginUseCase: LoginUseCaseProtocol {
 
     private let appleAuthRepository: AuthRepository
     private let naverAuthRepository: AuthRepository
-    // TODO: private let kakaoAuthRepository: AuthRepository
+    private let kakaoAuthRepository: AuthRepository
 
     init(
         appleAuthRepository: AuthRepository,
-        naverAuthRepository: AuthRepository
-        // TODO: naverAuthRepository: AuthRepository
+        naverAuthRepository: AuthRepository,
+        kakaoAuthRepository: AuthRepository
     ) {
         self.appleAuthRepository = appleAuthRepository
         self.naverAuthRepository = naverAuthRepository
+        self.kakaoAuthRepository = kakaoAuthRepository
     }
 
     func execute(type: LoginType) -> Observable<Result<String, Error>> {
@@ -47,8 +48,16 @@ final class LoginUseCase: LoginUseCaseProtocol {
                     }
                 }
 
-        // TODO: case .naver:
-        //   return naverAuthRepository.loginWithNaver()...
+        case .kakao:
+            return kakaoAuthRepository.loginWithKakao()
+                .flatMap { result -> Observable<Result<String, Error>> in
+                    switch result {
+                    case .success(let accessToken):
+                        return self.kakaoAuthRepository.sendKakaoCodeToServer(code: accessToken)
+                    case .failure(let error):
+                        return .just(.failure(error))
+                    }
+                }
 
         default:
             return .just(.failure(NSError(domain: "Unsupported LoginType", code: -999)))

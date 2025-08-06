@@ -64,9 +64,14 @@ private extension LoginViewController {
             .bind(to: viewModel.appleLoginTapped)
             .disposed(by: disposeBag)
         
-        // 네이버 로그인 클릭
+        // 네이버 로그인 버튼 클릭
         loginView.getNaverLoginButton.rx.tap
             .bind(to: viewModel.naverLoginTapped)
+            .disposed(by: disposeBag)
+        
+        // 카카오 로그인 버튼 클릭
+        loginView.getKakaoLoginButton.rx.tap
+            .bind(to: viewModel.kakaoLoginTapped)
             .disposed(by: disposeBag)
 
         viewModel.loginResult

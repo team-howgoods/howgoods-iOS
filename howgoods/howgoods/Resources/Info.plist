@@ -4,6 +4,8 @@
 <dict>
 	<key>NidUrlScheme</key>
 	<string>$(NidUrlScheme)</string>
+	<key>NATIVE_APP_KEY</key>
+	<string>$(NATIVE_APP_KEY)</string>
 	<key>BASE_API_URL</key>
 	<string>$(BASE_API_URL)</string>
 	<key>NidAppName</key>
@@ -15,6 +17,14 @@
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>kakao$(NATIVE_APP_KEY)</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>kakao</string>
+		</dict>
+		<dict>
 			<key>CFBundleURLName</key>
 			<string>naver</string>
 			<key>CFBundleURLSchemes</key>
@@ -25,6 +35,8 @@
 	</array>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
+		<string>kakaolink</string>
+		<string>kakaokompassauth</string>
 		<string>naversearchapp</string>
 		<string>naversearchthirdlogin</string>
 	</array>
