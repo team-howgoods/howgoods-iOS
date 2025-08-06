@@ -72,7 +72,7 @@ final class AuthNetworkService: AuthNetworkServiceProtocol {
                         let domainModel = authResponseDTO.data.toDomain()
                         observer.onNext(.success(domainModel))
 
-                    case .failure(let error):
+                    case .failure(_):
                         // 상태 코드 기반 에러 처리
                         if let responseCode = response.response?.statusCode {
                             switch responseCode {

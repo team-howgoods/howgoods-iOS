@@ -69,6 +69,10 @@ extension AppleAuthService: ASAuthorizationControllerPresentationContextProvidin
 
     /// Apple 인증 UI가 표시될 윈도우를 반환합니다.
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        return UIApplication.shared.windows.first { $0.isKeyWindow } ?? ASPresentationAnchor()
+        return UIApplication.shared
+            .connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow } ?? ASPresentationAnchor()
     }
 }

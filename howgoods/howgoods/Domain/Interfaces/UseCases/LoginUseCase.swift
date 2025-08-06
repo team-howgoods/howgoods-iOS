@@ -49,7 +49,7 @@ final class LoginUseCase: LoginUseCaseProtocol {
                         return .just(.failure(error))
                     }
                 }
-
+            
         case .naver:
             return naverAuthRepository.loginWithNaver()
                 .flatMap { result -> Observable<Result<String, Error>> in
@@ -60,7 +60,7 @@ final class LoginUseCase: LoginUseCaseProtocol {
                         return .just(.failure(error))
                     }
                 }
-
+            
         case .kakao:
             return kakaoAuthRepository.loginWithKakao()
                 .flatMap { result -> Observable<Result<String, Error>> in
@@ -71,9 +71,6 @@ final class LoginUseCase: LoginUseCaseProtocol {
                         return .just(.failure(error))
                     }
                 }
-
-        default:
-            return .just(.failure(NSError(domain: "Unsupported LoginType", code: -999)))
         }
     }
 }
