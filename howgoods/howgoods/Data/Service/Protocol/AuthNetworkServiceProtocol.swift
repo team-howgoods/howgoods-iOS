@@ -19,15 +19,15 @@ protocol AuthNetworkServiceProtocol {
     ///
     /// - Parameter code: Apple 로그인 후 획득한 authorization code
     /// - Returns: 서버로부터 수신한 `AuthToken` 또는 `Error`
-    func loginWithApple(code: String) -> Observable<Result<AuthToken, Error>>
+    func loginWithApple(code: String) -> Observable<Result<AuthToken, NetworkError>>
 
     /// Naver 로그인 인증 코드를 서버에 전송하고 토큰을 반환합니다.
     ///
     /// - Parameter code: Naver 로그인 후 획득한 token
-    func loginWithNaver(code: String) -> Observable<Result<AuthToken, Error>>
+    func loginWithNaver(code: String) -> Observable<Result<AuthToken, NetworkError>>
 
     /// Kakao 로그인 인증 코드를 서버에 전송하고 토큰을 반환합니다.
     ///
     /// - Parameter code: Kakao 로그인 후 획득한 token
-    func loginWithKakao(code: String) -> Observable<Result<AuthToken, Error>>
+    func loginWithKakao(code: String) -> Observable<Result<AuthToken, NetworkError>>
 }

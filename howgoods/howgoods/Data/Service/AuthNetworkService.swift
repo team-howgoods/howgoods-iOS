@@ -21,17 +21,17 @@ final class AuthNetworkService: AuthNetworkServiceProtocol {
     ///
     /// - Parameter code: Apple 로그인 후 발급받은 authorization code
     /// - Returns: 인증 성공 시 `AuthToken`, 실패 시 `Error`를 포함한 `Result`
-    func loginWithApple(code: String) -> Observable<Result<AuthToken, Error>> {
+    func loginWithApple(code: String) -> Observable<Result<AuthToken, NetworkError>> {
         return sendRequest(router: AuthRouter.loginWithApple(code: code))
     }
 
     /// Naver 로그인 인증 코드를 서버에 전송합니다.
-    func loginWithNaver(code: String) -> Observable<Result<AuthToken, Error>> {
+    func loginWithNaver(code: String) -> Observable<Result<AuthToken, NetworkError>> {
         return sendRequest(router: AuthRouter.loginWithNaver(code: code))
     }
 
     /// Kakao 로그인 인증 코드를 서버에 전송합니다.
-    func loginWithKakao(code: String) -> Observable<Result<AuthToken, Error>> {
+    func loginWithKakao(code: String) -> Observable<Result<AuthToken, NetworkError>> {
         return sendRequest(router: AuthRouter.loginWithKakao(code: code))
     }
 
@@ -41,7 +41,7 @@ final class AuthNetworkService: AuthNetworkServiceProtocol {
     ///
     /// - Parameter router: 요청 정보를 담고 있는 `AuthRouter`
     /// - Returns: 서버 응답을 도메인 모델로 변환한 `Observable<Result<AuthToken, Error>>`
-    private func sendRequest(router: URLRequestConvertible) -> Observable<Result<AuthToken, Error>> {
+    private func sendRequest(router: URLRequestConvertible) -> Observable<Result<AuthToken, NetworkError>> {
         return Observable.create { observer in
             AF.request(router)
                 .validate()
@@ -67,39 +67,42 @@ final class AuthNetworkService: AuthNetworkServiceProtocol {
 
                     // 응답 처리
                     switch response.result {
-                    case .success(let authResponseDTO):
-                        // 성공 시 도메인 모델로 변환
-                        let domainModel = authResponseDTO.data.toDomain()
-                        observer.onNext(.success(domainModel))
+                    case .success(let dto):
+                        guard dto.code == 200 else {
+                            observer.onNext(.failure(NetworkError.server(message: dto.message)))
+                            observer.onCompleted()
+                            return
+                        }
+                        guard let tokenDTO = dto.data else {
+                            observer.onNext(.failure(NetworkError.decoding)) // 스키마 불일치/누락
+                            observer.onCompleted()
+                            return
+                        }
+                        observer.onNext(.success(tokenDTO.toDomain()))
+                        observer.onCompleted()
 
-                    case .failure(_):
-                        // 상태 코드 기반 에러 처리
-                        if let responseCode = response.response?.statusCode {
-                            switch responseCode {
+                    case .failure(let afError):
+                        if let status = response.response?.statusCode {
+                            switch status {
                             case 401:
-                                observer.onNext(.failure(NetworkError.unauthorized))
-                                observer.onCompleted()
-                                return
-
+                                observer.onNext(.failure(.unauthorized)); observer.onCompleted(); return
                             case 408:
-                                observer.onNext(.failure(NetworkError.timeout))
-                                observer.onCompleted()
-                                return
-
-                            default:
-                                break
+                                observer.onNext(.failure(.timeout)); observer.onCompleted(); return
+                            default: break
                             }
                         }
 
-                        // 서버에서 내려준 에러 메시지 디코딩
                         if let data = response.data,
-                           let errorDTO = try? JSONDecoder().decode(ErrorResponseDTO.self, from: data) {
-                            observer.onNext(.failure(NetworkError.server(message: errorDTO.message)))
+                           let err = try? JSONDecoder().decode(ErrorResponseDTO.self, from: data) {
+                            observer.onNext(.failure(.server(message: err.message)))
+                        } else if case .responseSerializationFailed = afError.asAFError {
+                            // 디코딩/직렬화 실패는 명확히 표시
+                            observer.onNext(.failure(.decoding))
                         } else {
-                            observer.onNext(.failure(NetworkError.unknown))
+                            observer.onNext(.failure(.unknown))
                         }
-
                         observer.onCompleted()
+
                     }
                 }
 

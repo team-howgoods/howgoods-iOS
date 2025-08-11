@@ -24,7 +24,7 @@
 struct ErrorResponseDTO: Decodable {
     
     /// 요청 처리 성공 여부 (`false`일 경우 에러 응답)
-    let success: Bool
+    let success: Bool?
     
     /// 서버에서 정의한 에러 코드 (예: 400, 401, 422 등)
     let code: Int
@@ -36,5 +36,5 @@ struct ErrorResponseDTO: Decodable {
     ///
     /// - Key: 필드명 (예: "email", "password")
     /// - Value: 해당 필드의 오류 메시지
-    let validationErrors: [String: String]?
+    let validationErrors: [String: [String]]?
 }
