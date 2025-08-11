@@ -36,6 +36,7 @@ final class NaverAuthService {
         return Observable.create { observer in
             
             if self.oauth.accessToken != nil {
+                print("\(String(describing: self.oauth.accessToken))")
                 print("이미 로그인되어 있어 로그아웃 후 재시도합니다.")
                 self.oauth.logout()
             }

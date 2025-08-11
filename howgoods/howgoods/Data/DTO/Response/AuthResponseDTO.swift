@@ -23,7 +23,7 @@
 struct AuthResponseDTO: Decodable {
     
     /// 요청 처리 성공 여부
-    let success: Bool
+    let success: Bool?
     
     /// HTTP 상태 코드 또는 서버 정의 응답 코드
     let code: Int
@@ -32,8 +32,8 @@ struct AuthResponseDTO: Decodable {
     let message: String
     
     /// 유효성 검사 실패 시 서버에서 내려주는 상세 오류 메시지 (선택적)
-    let validationErrors: String?
+    let validationErrors: [String: [String]]?
     
     /// 인증 관련 실제 데이터 (ex. access token 등)
-    let data: AuthTokenDTO
+    let data: AuthTokenDTO?
 }
