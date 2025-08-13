@@ -6,8 +6,6 @@
 //
 
 import UIKit
-import SnapKit
-import Then
 import AuthenticationServices
 
 /// 로그인 화면의 UI 컴포넌트를 구성하는 커스텀 뷰
@@ -21,22 +19,29 @@ final class LoginView: UIView {
     
     /// Apple 로그인 버튼
     /// - `ASAuthorizationAppleIDButton`은 시스템에서 제공하는 공식 Apple 로그인 버튼 스타일을 지원
-    private let appleLoginButton = ASAuthorizationAppleIDButton().then {
-        $0.cornerRadius = 8
-        $0.translatesAutoresizingMaskIntoConstraints = false
-    }
+    private let appleLoginButton: ASAuthorizationAppleIDButton = {
+        let button = ASAuthorizationAppleIDButton()
+        button.cornerRadius = 8
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+
     
     /// Naver 로그인 버튼
     /// - 버튼 이미지 리소스: "NaverLoginButton_G"
-    private let naverLoginButton = UIButton().then {
-        $0.setImage(UIImage(named: "NaverLoginButton_G"), for: .normal)
-    }
+    private let naverLoginButton: UIButton = {
+        let button = UIButton()
+        button.setImage(UIImage(named: "NaverLoginButton_G"), for: .normal)
+        return button
+    }()
     
     /// Kakao 로그인 버튼
     /// - 버튼 이미지 리소스: "KakaoLoginButton"
-    private let kakaoLoginButton = UIButton().then {
-        $0.setImage(UIImage(named: "KakaoLoginButton"), for: .normal)
-    }
+    private let kakaoLoginButton: UIButton = {
+        let button = UIButton()
+        button.setImage(UIImage(named: "KakaoLoginButton"), for: .normal)
+        return button
+    }()
 
     // MARK: - Getter
     
@@ -102,25 +107,29 @@ private extension LoginView {
     /// 오토레이아웃 제약 설정
     /// - 버튼 크기, 위치, 간격 지정
     func setConstraints() {
-        appleLoginButton.snp.makeConstraints {
-            $0.centerX.equalToSuperview()
-            $0.height.equalTo(50)
-            $0.width.equalTo(280)
-        }
+        appleLoginButton.translatesAutoresizingMaskIntoConstraints = false
+        naverLoginButton.translatesAutoresizingMaskIntoConstraints = false
+        kakaoLoginButton.translatesAutoresizingMaskIntoConstraints = false
 
-        naverLoginButton.snp.makeConstraints {
-            $0.top.equalTo(appleLoginButton.snp.bottom).offset(16)
-            $0.centerX.equalToSuperview()
-            $0.height.equalTo(50)
-            $0.width.equalTo(280)
-        }
+        NSLayoutConstraint.activate([
+            // appleLoginButton
+            appleLoginButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+            appleLoginButton.heightAnchor.constraint(equalToConstant: 50),
+            appleLoginButton.widthAnchor.constraint(equalToConstant: 280),
+            
+            // naverLoginButton
+            naverLoginButton.topAnchor.constraint(equalTo: appleLoginButton.bottomAnchor, constant: 16),
+            naverLoginButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+            naverLoginButton.heightAnchor.constraint(equalToConstant: 50),
+            naverLoginButton.widthAnchor.constraint(equalToConstant: 280),
+            
+            // kakaoLoginButton
+            kakaoLoginButton.topAnchor.constraint(equalTo: naverLoginButton.bottomAnchor, constant: 16),
+            kakaoLoginButton.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -40),
+            kakaoLoginButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+            kakaoLoginButton.heightAnchor.constraint(equalToConstant: 50),
+            kakaoLoginButton.widthAnchor.constraint(equalToConstant: 280)
+        ])
 
-        kakaoLoginButton.snp.makeConstraints {
-            $0.top.equalTo(naverLoginButton.snp.bottom).offset(16)
-            $0.bottom.equalToSuperview().inset(40)
-            $0.centerX.equalToSuperview()
-            $0.height.equalTo(50)
-            $0.width.equalTo(280)
-        }
     }
 }
