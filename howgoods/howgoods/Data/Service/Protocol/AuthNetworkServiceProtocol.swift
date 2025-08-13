@@ -5,29 +5,36 @@
 //  Created by 양원식 on 8/3/25.
 //
 
-import RxSwift
+import Combine
 
-/// 인증 관련 네트워크 요청을 담당하는 서비스 계층 프로토콜입니다.
+/// 인증 관련 네트워크 요청을 담당하는 서비스 계층 프로토콜
 ///
-/// Apple, Naver, Kakao 소셜 로그인에서 발급받은 인증 코드를 서버에 전달하고,
-/// 서버로부터 인증 토큰(`AuthToken`)을 수신하는 역할을 합니다.
-///
-/// 이 프로토콜은 실제 구현체(`AuthNetworkService` 등)와 분리되어 테스트 가능성과 확장성을 높입니다.
+/// - 역할:
+///   - Apple, Naver, Kakao 로그인 과정에서 발급받은 인증 코드를 서버에 전달
+///   - 서버로부터 최종 인증 토큰(`AuthToken`)을 수신
+///   - 모든 메서드는 네트워크 요청 결과를 `Combine` 퍼블리셔 형태로 반환
 protocol AuthNetworkServiceProtocol {
-
-    /// Apple 로그인 인증 코드를 서버에 전송하고 토큰을 반환합니다.
+    
+    /// Apple 로그인 코드 서버 전송
     ///
-    /// - Parameter code: Apple 로그인 후 획득한 authorization code
-    /// - Returns: 서버로부터 수신한 `AuthToken` 또는 `Error`
-    func loginWithApple(code: String) -> Observable<Result<AuthToken, NetworkError>>
-
-    /// Naver 로그인 인증 코드를 서버에 전송하고 토큰을 반환합니다.
+    /// - Parameter code: Apple 로그인 후 발급받은 인증 코드
+    /// - Returns:
+    ///   - `AnyPublisher<Result<AuthToken, NetworkError>, Never>`:
+    ///     - `.success(AuthToken)`: 인증 성공 시 발급된 토큰
+    ///     - `.failure(NetworkError)`: 인증 실패 사유
+    func loginWithApple(code: String) -> AnyPublisher<Result<AuthToken, NetworkError>, Never>
+    
+    /// Naver 로그인 코드 서버 전송
     ///
-    /// - Parameter code: Naver 로그인 후 획득한 token
-    func loginWithNaver(code: String) -> Observable<Result<AuthToken, NetworkError>>
-
-    /// Kakao 로그인 인증 코드를 서버에 전송하고 토큰을 반환합니다.
+    /// - Parameter code: Naver 로그인 후 발급받은 인증 코드
+    /// - Returns:
+    ///   - 동일한 반환 구조
+    func loginWithNaver(code: String) -> AnyPublisher<Result<AuthToken, NetworkError>, Never>
+    
+    /// Kakao 로그인 코드 서버 전송
     ///
-    /// - Parameter code: Kakao 로그인 후 획득한 token
-    func loginWithKakao(code: String) -> Observable<Result<AuthToken, NetworkError>>
+    /// - Parameter code: Kakao 로그인 후 발급받은 인증 코드
+    /// - Returns:
+    ///   - 동일한 반환 구조
+    func loginWithKakao(code: String) -> AnyPublisher<Result<AuthToken, NetworkError>, Never>
 }

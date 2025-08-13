@@ -5,108 +5,116 @@
 //  Created by 양원식 on 8/3/25.
 //
 
-import AuthenticationServices
-import RxSwift
+import Combine
 import Alamofire
+import Foundation
 
-/// 인증 관련 네트워크 요청을 처리하는 서비스 클래스입니다.
+/// 인증 관련 네트워크 요청을 담당하는 서비스
 ///
-/// `AuthRouter`를 기반으로 소셜 로그인 인증 코드를 서버에 전송하고,
-/// 서버로부터 access token을 포함한 `AuthToken`을 수신합니다.
-///
-/// `RxSwift`의 `Observable`을 통해 비동기 처리를 제공합니다.
+/// - 역할:
+///   - Apple, Naver, Kakao 로그인 요청을 서버에 전송
+///   - 서버로부터 인증 토큰(`AuthToken`)을 수신하여 반환
+///   - 네트워크 및 서버 응답 에러를 처리하고 `NetworkError` 형태로 매핑
 final class AuthNetworkService: AuthNetworkServiceProtocol {
-
-    /// Apple 로그인 인증 코드를 서버에 전송합니다.
+    
+    // MARK: - Public Methods
+    
+    /// Apple 로그인 요청
     ///
-    /// - Parameter code: Apple 로그인 후 발급받은 authorization code
-    /// - Returns: 인증 성공 시 `AuthToken`, 실패 시 `Error`를 포함한 `Result`
-    func loginWithApple(code: String) -> Observable<Result<AuthToken, NetworkError>> {
+    /// - Parameter code: Apple 로그인 후 발급받은 인증 코드
+    /// - Returns:
+    ///   - `AnyPublisher<Result<AuthToken, NetworkError>, Never>`:
+    ///     - `.success(AuthToken)`: 인증 성공 시 서버에서 발급받은 토큰
+    ///     - `.failure(NetworkError)`: 인증 실패 시 에러
+    func loginWithApple(code: String) -> AnyPublisher<Result<AuthToken, NetworkError>, Never> {
+        print("Apple 호출됨, code:", code)
         return sendRequest(router: AuthRouter.loginWithApple(code: code))
     }
-
-    /// Naver 로그인 인증 코드를 서버에 전송합니다.
-    func loginWithNaver(code: String) -> Observable<Result<AuthToken, NetworkError>> {
+    
+    /// Naver 로그인 요청
+    ///
+    /// - Parameter code: Naver 로그인 후 발급받은 인증 코드
+    /// - Returns:
+    ///   - 동일한 반환 구조
+    func loginWithNaver(code: String) -> AnyPublisher<Result<AuthToken, NetworkError>, Never> {
+        print("Naver 호출됨, code:", code)
         return sendRequest(router: AuthRouter.loginWithNaver(code: code))
     }
-
-    /// Kakao 로그인 인증 코드를 서버에 전송합니다.
-    func loginWithKakao(code: String) -> Observable<Result<AuthToken, NetworkError>> {
+    
+    /// Kakao 로그인 요청
+    ///
+    /// - Parameter code: Kakao 로그인 후 발급받은 인증 코드
+    /// - Returns:
+    ///   - 동일한 반환 구조
+    func loginWithKakao(code: String) -> AnyPublisher<Result<AuthToken, NetworkError>, Never> {
+        print("Kakao 호출됨, code:", code)
         return sendRequest(router: AuthRouter.loginWithKakao(code: code))
     }
-
-    // MARK: - Private
-
-    /// 공통 인증 요청 처리 함수
+    
+    // MARK: - Private Methods
+    
+    /// 공통 네트워크 요청 처리 메서드
     ///
-    /// - Parameter router: 요청 정보를 담고 있는 `AuthRouter`
-    /// - Returns: 서버 응답을 도메인 모델로 변환한 `Observable<Result<AuthToken, Error>>`
-    private func sendRequest(router: URLRequestConvertible) -> Observable<Result<AuthToken, NetworkError>> {
-        return Observable.create { observer in
+    /// - Parameter router: API 요청 정보를 담은 `URLRequestConvertible`
+    /// - Returns:
+    ///   - `AnyPublisher<Result<AuthToken, NetworkError>, Never>`
+    ///   - 요청 성공 시 토큰 반환, 실패 시 `NetworkError` 반환
+    private func sendRequest(router: URLRequestConvertible) -> AnyPublisher<Result<AuthToken, NetworkError>, Never> {
+        Future { promise in
             AF.request(router)
                 .validate()
                 .responseDecodable(of: AuthResponseDTO.self) { response in
-
-                    // 서버 응답 JSON 출력 (디버깅용)
+                    
+                    // 서버 응답 JSON 예쁘게 출력 (디버깅 용도)
                     if let data = response.data {
-                        do {
-                            let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
-                            let prettyData = try JSONSerialization.data(withJSONObject: jsonObject, options: [.prettyPrinted])
-                            if let prettyString = String(data: prettyData, encoding: .utf8) {
-                                print("서버 응답 JSON:\n\(prettyString)")
-                            }
-                        } catch {
-                            print("JSON 포맷팅 실패: \(error.localizedDescription)")
-                            if let rawString = String(data: data, encoding: .utf8) {
-                                print("원본 JSON:\n\(rawString)")
-                            }
+                        if let jsonObject = try? JSONSerialization.jsonObject(with: data, options: []),
+                           let prettyData = try? JSONSerialization.data(withJSONObject: jsonObject, options: [.prettyPrinted]),
+                           let prettyString = String(data: prettyData, encoding: .utf8) {
+                            print("서버 응답 JSON:\n\(prettyString)")
                         }
-                    } else {
-                        print("서버 응답 데이터 없음")
                     }
-
-                    // 응답 처리
+                    
                     switch response.result {
                     case .success(let dto):
+                        // 서버 응답 코드 검증
                         guard dto.code == 200 else {
-                            observer.onNext(.failure(NetworkError.server(message: dto.message)))
-                            observer.onCompleted()
+                            promise(.success(.failure(.server(message: dto.message))))
                             return
                         }
+                        // 토큰 데이터 존재 여부 확인
                         guard let tokenDTO = dto.data else {
-                            observer.onNext(.failure(NetworkError.decoding)) // 스키마 불일치/누락
-                            observer.onCompleted()
+                            promise(.success(.failure(.decoding)))
                             return
                         }
-                        observer.onNext(.success(tokenDTO.toDomain()))
-                        observer.onCompleted()
-
+                        // DTO → Domain 변환 후 반환
+                        promise(.success(.success(tokenDTO.toDomain())))
+                        
                     case .failure(let afError):
+                        // HTTP 상태 코드 기반 에러 처리
                         if let status = response.response?.statusCode {
                             switch status {
-                            case 401:
-                                observer.onNext(.failure(.unauthorized)); observer.onCompleted(); return
-                            case 408:
-                                observer.onNext(.failure(.timeout)); observer.onCompleted(); return
+                            case 401: promise(.success(.failure(.unauthorized))); return
+                            case 408: promise(.success(.failure(.timeout))); return
                             default: break
                             }
                         }
-
+                        
+                        // 서버에서 내려주는 에러 메시지 처리
                         if let data = response.data,
                            let err = try? JSONDecoder().decode(ErrorResponseDTO.self, from: data) {
-                            observer.onNext(.failure(.server(message: err.message)))
-                        } else if case .responseSerializationFailed = afError.asAFError {
-                            // 디코딩/직렬화 실패는 명확히 표시
-                            observer.onNext(.failure(.decoding))
-                        } else {
-                            observer.onNext(.failure(.unknown))
+                            promise(.success(.failure(.server(message: err.message))))
                         }
-                        observer.onCompleted()
-
+                        // 디코딩 실패 처리
+                        else if case .responseSerializationFailed = afError.asAFError {
+                            promise(.success(.failure(.decoding)))
+                        }
+                        // 알 수 없는 에러 처리
+                        else {
+                            promise(.success(.failure(.unknown)))
+                        }
                     }
                 }
-
-            return Disposables.create()
         }
+        .eraseToAnyPublisher()
     }
 }

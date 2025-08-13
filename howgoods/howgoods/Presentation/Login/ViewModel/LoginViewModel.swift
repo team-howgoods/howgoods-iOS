@@ -5,83 +5,83 @@
 //  Created by 양원식 on 8/3/25.
 //
 
-import RxSwift
-import RxRelay
+import Combine
 import Foundation
 
 // MARK: - Input / Output Protocol
 
-/// 로그인 뷰에서 발생하는 사용자 액션들을 정의한 입력 프로토콜입니다.
+/// ViewModel이 외부(View)로부터 받을 입력 이벤트 정의
 protocol LoginViewModelInput {
-    
-    /// Apple 로그인 버튼이 탭되었을 때 전달되는 이벤트
-    var appleLoginTapped: PublishRelay<Void> { get }
-    
-    /// Naver 로그인 버튼이 탭되었을 때 전달되는 이벤트
-    var naverLoginTapped: PublishRelay<Void> { get }
-    
-    /// Kakao 로그인 버튼이 탭되었을 때 전달되는 이벤트
-    var kakaoLoginTapped: PublishRelay<Void> { get }
+    /// Apple 로그인 버튼 탭 이벤트
+    var appleLoginTapped: PassthroughSubject<Void, Never> { get }
+    /// Naver 로그인 버튼 탭 이벤트
+    var naverLoginTapped: PassthroughSubject<Void, Never> { get }
+    /// Kakao 로그인 버튼 탭 이벤트
+    var kakaoLoginTapped: PassthroughSubject<Void, Never> { get }
 }
 
-/// 로그인 결과(성공/실패)를 뷰에 전달하는 출력 프로토콜입니다.
+/// ViewModel이 외부(View)로 내보낼 출력 데이터 정의
 protocol LoginViewModelOutput {
-    
-    /// 로그인 결과를 전달하는 드라이버 (accessToken or Error)
-    var loginResult: Observable<Result<String, Error>> { get }
+    /// 로그인 요청 결과 스트림
+    /// - 성공: 로그인 토큰(String)
+    /// - 실패: Error
+    var loginResult: AnyPublisher<Result<String, Error>, Never> { get }
 }
 
-// MARK: - ViewModel
-
-/// 소셜 로그인 버튼 탭 이벤트를 처리하고, 로그인 결과를 바인딩하는 ViewModel입니다.
-///
-/// 각 로그인 버튼의 입력 이벤트를 수신하여 `LoginUseCase`를 통해 인증 과정을 실행하고,
-/// 최종 결과(accessToken 또는 error)를 `loginResult`로 전달합니다.
+/// 로그인 화면의 ViewModel
+/// - 역할: 로그인 버튼 탭 이벤트를 받아 해당 로그인 로직을 실행하고 결과를 View에 전달
 final class LoginViewModel: LoginViewModelInput, LoginViewModelOutput {
 
     // MARK: - Input
-    let appleLoginTapped = PublishRelay<Void>()
-    let naverLoginTapped = PublishRelay<Void>()
-    let kakaoLoginTapped = PublishRelay<Void>()
+    /// Apple 로그인 버튼 탭 이벤트
+    let appleLoginTapped = PassthroughSubject<Void, Never>()
+    /// Naver 로그인 버튼 탭 이벤트
+    let naverLoginTapped = PassthroughSubject<Void, Never>()
+    /// Kakao 로그인 버튼 탭 이벤트
+    let kakaoLoginTapped = PassthroughSubject<Void, Never>()
 
     // MARK: - Output
-    let loginResult: Observable<Result<String, Error>>
+    /// 내부에서 로그인 결과를 저장하는 Subject
+    private let loginResultSubject = PassthroughSubject<Result<String, Error>, Never>()
+    /// 외부에서 구독 가능한 로그인 결과 스트림
+    var loginResult: AnyPublisher<Result<String, Error>, Never> {
+        loginResultSubject.eraseToAnyPublisher()
+    }
 
     // MARK: - Dependencies
-    private let loginUseCase: LoginUseCase
-    private let disposeBag = DisposeBag()
+    /// 실제 로그인 로직을 수행하는 UseCase
+    private let loginUseCase: LoginUseCaseProtocol
+    /// Combine 구독 관리
+    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Init
-
-    /// ViewModel 생성자
-    /// - Parameter loginUseCase: 소셜 로그인 실행을 위한 유즈케이스
-    init(loginUseCase: LoginUseCase) {
+    /// ViewModel 초기화
+    /// - Parameter loginUseCase: 로그인 비즈니스 로직을 수행하는 UseCase
+    init(loginUseCase: LoginUseCaseProtocol) {
         self.loginUseCase = loginUseCase
 
-        let result = PublishRelay<Result<String, Error>>()
-
-        // Apple 로그인 흐름
+        // Apple 로그인 버튼 탭 시 실행 로직
         appleLoginTapped
-            .map { LoginType.apple }
-            .flatMapLatest { loginUseCase.execute(type: $0) }
-            .bind(to: result)
-            .disposed(by: disposeBag)
+            .flatMap { loginUseCase.execute(type: .apple) } // Apple 로그인 실행
+            .sink { [weak self] result in
+                self?.loginResultSubject.send(result) // 결과 전달
+            }
+            .store(in: &cancellables)
 
-        // Naver 로그인 흐름
+        // Naver 로그인 버튼 탭 시 실행 로직
         naverLoginTapped
-            .map { LoginType.naver }
-            .flatMapLatest { loginUseCase.execute(type: $0) }
-            .bind(to: result)
-            .disposed(by: disposeBag)
+            .flatMap { loginUseCase.execute(type: .naver) } // Naver 로그인 실행
+            .sink { [weak self] result in
+                self?.loginResultSubject.send(result) // 결과 전달
+            }
+            .store(in: &cancellables)
 
-        // Kakao 로그인 흐름
+        // Kakao 로그인 버튼 탭 시 실행 로직
         kakaoLoginTapped
-            .map { LoginType.kakao }
-            .flatMapLatest { loginUseCase.execute(type: $0) }
-            .bind(to: result)
-            .disposed(by: disposeBag)
-
-        // 결과를 Output으로 노출 (에러 발생 시 기본값 반환)
-        self.loginResult = result.asObservable()
+            .flatMap { loginUseCase.execute(type: .kakao) } // Kakao 로그인 실행
+            .sink { [weak self] result in
+                self?.loginResultSubject.send(result) // 결과 전달
+            }
+            .store(in: &cancellables)
     }
 }

@@ -8,29 +8,28 @@
 import Alamofire
 import Foundation
 
-/// 인증 관련 API 요청의 스펙을 정의하는 라우터입니다.
+/// 인증 API 요청 경로 및 파라미터를 정의하는 라우터
 ///
-/// `URLRequestConvertible`을 채택하여 `Alamofire` 요청에 바로 사용할 수 있도록 구성되어 있습니다.
-///
-/// 각각의 소셜 로그인 방식(Apple, Naver, Kakao)에 따라 요청 경로(path)와 body(`LoginRequestDTO`)가 설정됩니다.
+/// - 역할:
+///   - Apple, Naver, Kakao 소셜 로그인 요청을 서버에 전송하기 위한 `URLRequest` 구성
+///   - 각 케이스별로 요청 경로(`path`), HTTP 메서드, 요청 바디를 설정
 enum AuthRouter: URLRequestConvertible {
     
     /// Apple 로그인 요청
-    /// - Parameter code: Apple 로그인 후 획득한 인증 코드 (authorizationCode)
     case loginWithApple(code: String)
-    
     /// Naver 로그인 요청
-    /// - Parameter code: Naver 로그인 후 획득한 인증 코드
     case loginWithNaver(code: String)
-    
     /// Kakao 로그인 요청
-    /// - Parameter code: Kakao 로그인 후 획득한 인증 코드
     case loginWithKakao(code: String)
 
-    /// HTTP 요청 방식 (모든 케이스에서 POST)
+    // MARK: - HTTP Method
+    
+    /// 모든 로그인 요청은 `POST` 메서드를 사용
     var method: HTTPMethod { .post }
 
-    /// 요청 경로 (소셜별 콜백 URL)
+    // MARK: - API Path
+    
+    /// 각 소셜 로그인 타입별 서버 API 엔드포인트 경로
     var path: String {
         switch self {
         case .loginWithApple:
@@ -42,27 +41,20 @@ enum AuthRouter: URLRequestConvertible {
         }
     }
 
-    /// URLRequest를 구성하여 반환합니다.
+    // MARK: - URLRequestConvertible
+    
+    /// `URLRequest` 객체 생성
     ///
-    /// - Returns: `URLRequest` 인스턴스 (Alamofire에서 사용 가능)
-    /// - Throws: `EncodingError` 발생 시 throw
+    /// - Returns: 구성된 `URLRequest`
+    /// - Throws: `JSONEncoder` 인코딩 실패 시 에러
     func asURLRequest() throws -> URLRequest {
-        // Info.plist에 정의된 BASE_API_URL 사용
         let url = Bundle.main.baseAPIURL
-
         var request = URLRequest(url: url.appendingPathComponent(path))
+        
+        // HTTP 메서드와 Content-Type 설정
         request.method = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        // 각 로그인 케이스에 대해 공통적으로 LoginRequestDTO 생성 및 JSON 인코딩
+        // 요청 바디에 인증 코드 포함
         switch self {
-        case .loginWithApple(let code),
-             .loginWithNaver(let code),
-             .loginWithKakao(let code):
-            let dto = LoginRequestDTO(code: code)
-            request.httpBody = try JSONEncoder().encode(dto)
-        }
-
-        return request
-    }
-}
+        case .login
