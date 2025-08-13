@@ -5,82 +5,98 @@
 //  Created by 양원식 on 8/4/25.
 //
 
-import Foundation
-import RxSwift
+import Combine
 import KakaoSDKAuth
 import KakaoSDKUser
 
-/// Kakao 로그인을 처리하는 인증 서비스입니다.
+/// 카카오 로그인 기능을 담당하는 서비스
 ///
-/// 카카오톡 앱 또는 카카오 계정 웹로그인을 통해 사용자 인증을 수행하고,
-/// access token을 `Observable<Result<String, Error>>` 형태로 반환합니다.
+/// - 역할:
+///   - `KakaoSDKUser`를 이용해 카카오톡 앱 또는 계정 로그인 처리
+///   - 카카오에서 발급받은 액세스 토큰을 서버로 전달하여 최종 인증 토큰 발급
+///   - 결과를 `Combine` 퍼블리셔 형태로 반환
 final class KakaoAuthService {
     
-    /// 카카오 API 엔드포인트
+    // MARK: - Dependencies
+    
+    /// 카카오 사용자 API 객체
     private let userApi = UserApi.shared
+    
+    /// 서버와 통신하여 카카오 인증 토큰을 교환하는 네트워크 서비스
+    private let authNetworkService: AuthNetworkService
+    
+    /// Combine 구독 관리용 Set
+    private var cancellables = Set<AnyCancellable>()
 
-    /// 카카오 로그인 인증을 시작합니다.
+    // MARK: - Initializer
+    
+    /// 카카오 인증 서비스 초기화
+    /// - Parameter authNetworkService: 서버 통신을 담당하는 네트워크 서비스
+    init(authNetworkService: AuthNetworkService) {
+        self.authNetworkService = authNetworkService
+    }
+
+    // MARK: - Public Methods
+    
+    /// 카카오 로그인 진행
     ///
-    /// 기존 로그인 상태가 있다면 먼저 로그아웃을 시도하고,
-    /// 이후 카카오톡 앱이 설치되어 있으면 앱 로그인을, 아니면 계정 로그인을 시도합니다.
+    /// - 동작 흐름:
+    ///   1. 기존 로그인 세션 로그아웃
+    ///   2. 기기에 카카오톡 앱이 설치되어 있으면 앱 로그인, 아니면 계정 로그인 진행
+    ///   3. 로그인 성공 시 발급받은 액세스 토큰을 서버에 전달하여 최종 인증 토큰 발급
+    ///   4. 성공 시 `.success(String)` 반환, 실패 시 `.failure(Error)` 반환
     ///
-    /// - Returns: 인증 성공 시 accessToken, 실패 시 Error가 포함된 Rx Observable
-    func authorizeWithKakao() -> Observable<Result<String, Error>> {
-        return Observable.create { observer in
-            
-            // 기존 로그인 상태가 있다면 로그아웃
-            self.userApi.logout { logoutError in
-                if let logoutError = logoutError {
-                    print("카카오 로그아웃 실패: \(logoutError.localizedDescription)")
-                } else {
-                    print("이미 로그인되어 있어 로그아웃 후 재시도합니다.")
-                }
+    /// - Returns:
+    ///   - `AnyPublisher<Result<String, Error>, Never>`:
+    ///     - `.success(String)`: 서버 인증 성공 시 발급된 최종 액세스 토큰
+    ///     - `.failure(Error)`: 인증 실패 시 에러 정보
+    func authorizeWithKakao() -> AnyPublisher<Result<String, Error>, Never> {
+        Future { [weak self] promise in
+            guard let self = self else { return }
 
-                // 현재 토큰 상태 확인
-                let currentToken = AuthApi.hasToken()
-                    ? (TokenManager.manager.getToken()?.accessToken ?? "없음")
-                    : "없음"
-                print("로그인 시도 직전 accessToken 상태: \(currentToken)")
-
-                // 카카오톡 앱이 설치되어 있다면 앱 로그인, 아니면 계정 로그인
+            // 기존 세션 로그아웃
+            self.userApi.logout { _ in
                 if UserApi.isKakaoTalkLoginAvailable() {
-                    self.loginWithKakaoTalk(observer)
+                    // 카카오톡 앱 로그인
+                    self.userApi.loginWithKakaoTalk { oauthToken, error in
+                        if let error = error {
+                            promise(.success(.failure(error)))
+                        } else if let token = oauthToken?.accessToken {
+                            self.authNetworkService.loginWithKakao(code: token)
+                                .map { result in
+                                    switch result {
+                                    case .success(let authToken):
+                                        return .success(authToken.accessToken)
+                                    case .failure(let err):
+                                        return .failure(err)
+                                    }
+                                }
+                                .sink(receiveValue: { promise(.success($0)) })
+                                .store(in: &self.cancellables)
+                        }
+                    }
                 } else {
-                    self.loginWithKakaoAccount(observer)
+                    // 카카오 계정 로그인
+                    self.userApi.loginWithKakaoAccount { oauthToken, error in
+                        if let error = error {
+                            promise(.success(.failure(error)))
+                        } else if let token = oauthToken?.accessToken {
+                            self.authNetworkService.loginWithKakao(code: token)
+                                .map { result in
+                                    switch result {
+                                    case .success(let authToken):
+                                        return .success(authToken.accessToken)
+                                    case .failure(let err):
+                                        return .failure(err)
+                                    }
+                                }
+                                .sink(receiveValue: { promise(.success($0)) })
+                                .store(in: &self.cancellables)
+                        }
+                    }
                 }
             }
-
-            return Disposables.create()
         }
-    }
-
-    /// 카카오톡 앱을 통한 로그인 요청
-    ///
-    /// - Parameter observer: Rx Observable을 구독 중인 옵저버
-    private func loginWithKakaoTalk(_ observer: AnyObserver<Result<String, Error>>) {
-        userApi.loginWithKakaoTalk { oauthToken, error in
-            if let error = error {
-                observer.onNext(.failure(error))
-            } else if let token = oauthToken?.accessToken {
-                print("카카오톡 accessToken: \(token)")
-                observer.onNext(.success(token))
-            }
-            observer.onCompleted()
-        }
-    }
-
-    /// 카카오 계정(웹)을 통한 로그인 요청
-    ///
-    /// - Parameter observer: Rx Observable을 구독 중인 옵저버
-    private func loginWithKakaoAccount(_ observer: AnyObserver<Result<String, Error>>) {
-        userApi.loginWithKakaoAccount { oauthToken, error in
-            if let error = error {
-                observer.onNext(.failure(error))
-            } else if let token = oauthToken?.accessToken {
-                print("카카오 계정 accessToken: \(token)")
-                observer.onNext(.success(token))
-            }
-            observer.onCompleted()
-        }
+        .eraseToAnyPublisher()
     }
 }

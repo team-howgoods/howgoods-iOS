@@ -6,47 +6,53 @@
 //
 
 import UIKit
+import Combine
 import AuthenticationServices
-import RxSwift
-import RxCocoa
 
-/// 로그인 화면을 담당하는 ViewController입니다.
+/// 로그인 화면을 담당하는 ViewController
 ///
-/// 소셜 로그인 버튼(Apple, Naver, Kakao)을 통해 사용자의 로그인 요청을 처리하고,
-/// ViewModel을 통해 인증 흐름을 수행한 후, 결과를 출력합니다.
+/// - 역할:
+///   - Apple, Naver, Kakao 로그인 버튼 클릭 이벤트를 ViewModel에 전달
+///   - ViewModel의 로그인 처리 결과를 구독하여 UI에 반영
 final class LoginViewController: UIViewController {
     
     // MARK: - Properties
-
-    /// ViewModel로부터 전달받은 로그인 결과를 구독하고 처리
+    
+    /// MVVM 구조에서 View와 Model을 연결하는 ViewModel
+    /// - 사용자의 버튼 입력을 전달하고 결과를 수신
     private let viewModel: LoginViewModel
     
-    /// 로그인 화면의 UI 컴포넌트를 담고 있는 커스텀 뷰
+    /// 로그인 화면의 UI 요소를 포함하는 커스텀 뷰
+    /// - 버튼, 로고, 설명 라벨 등
     private let loginView = LoginView()
     
-    /// Rx 구독 해제를 위한 DisposeBag
-    private let disposeBag = DisposeBag()
+    /// Combine의 구독을 관리하는 Set
+    /// - 메모리 누수를 방지하고, ViewController 해제 시 구독 해제
+    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initializer
-
-    /// ViewModel 주입을 통한 초기화
-    /// - Parameter viewModel: MVVM 구조의 LoginViewModel 인스턴스
+    
+    /// 의존성 주입을 통한 초기화
+    /// - Parameter viewModel: `LoginViewModel` 인스턴스
     init(viewModel: LoginViewModel) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
-
+    
+    /// Storyboard 초기화 방지
     @available(*, unavailable, message: "Storyboard is not supported")
     required init?(coder: NSCoder) {
         fatalError()
     }
     
     // MARK: - Lifecycle
-
+    
+    /// ViewController의 root view를 `loginView`로 설정
     override func loadView() {
         self.view = loginView
     }
     
+    /// 화면 로드 완료 시 UI와 바인딩 설정
     override func viewDidLoad() {
         super.viewDidLoad()
         configure()
@@ -57,7 +63,7 @@ final class LoginViewController: UIViewController {
 
 private extension LoginViewController {
     
-    /// 전체 UI 초기 설정 메서드
+    /// 전체 UI 및 이벤트 바인딩 초기 설정
     func configure() {
         setHierarchy()
         setStyles()
@@ -65,60 +71,67 @@ private extension LoginViewController {
         setActions()
         setBinding()
     }
-
+    
     /// 뷰 계층 구성
+    /// - 현재 `loginView` 내부에서 버튼과 UI 요소가 이미 구성되어 있음
     func setHierarchy() {
-        // TODO: loginView 내부에서 이미 구성된 버튼 계층 사용
+        // TODO: loginView 내부 요소 추가 시 확장 가능
     }
-
-    /// 스타일 설정
+    
+    /// 스타일 설정 (배경색, 폰트 등)
     func setStyles() {
-        // TODO: 배경색, 폰트 등 지정 가능
+        // TODO: 화면 전체 스타일 지정
     }
-
+    
     /// 오토레이아웃 제약 설정
     func setConstraints() {
-        // TODO: SnapKit 등으로 구성 가능
+        // TODO: SnapKit 등으로 레이아웃 구성
     }
-
-    /// 버튼 액션 등 기본 이벤트 설정
+    
+    /// 버튼 액션 설정 (비 Combine 방식)
     func setActions() {
-        // TODO: 비 Rx 액션 연결 시 사용
+        // TODO: 필요 시 target-action 방식 이벤트 연결
     }
-
-    /// Rx 바인딩 설정
+    
+    /// Combine 기반 이벤트 바인딩
     func setBinding() {
+        // Apple 로그인 버튼 탭 이벤트 → ViewModel Input 전달
+        loginView.getAppleLoginButton
+            .publisher(for: .touchUpInside)
+            .sink { [weak self] _ in
+                self?.viewModel.appleLoginTapped.send(())
+            }
+            .store(in: &cancellables)
         
-        // Apple 로그인 버튼 탭 → ViewModel Input
-        loginView.getAppleLoginButton.rx.controlEvent(.touchUpInside)
-            .bind(to: viewModel.appleLoginTapped)
-            .disposed(by: disposeBag)
-
-        // Naver 로그인 버튼 탭
-        loginView.getNaverLoginButton.rx.tap
-            .bind(to: viewModel.naverLoginTapped)
-            .disposed(by: disposeBag)
-
-        // Kakao 로그인 버튼 탭
-        loginView.getKakaoLoginButton.rx.tap
-            .bind(to: viewModel.kakaoLoginTapped)
-            .disposed(by: disposeBag)
-
-        // ViewModel Output: 로그인 결과 수신
+        // Naver 로그인 버튼 탭 이벤트
+        loginView.getNaverLoginButton
+            .publisher(for: .touchUpInside)
+            .sink { [weak self] _ in
+                self?.viewModel.naverLoginTapped.send(())
+            }
+            .store(in: &cancellables)
+        
+        // Kakao 로그인 버튼 탭 이벤트
+        loginView.getKakaoLoginButton
+            .publisher(for: .touchUpInside)
+            .sink { [weak self] _ in
+                self?.viewModel.kakaoLoginTapped.send(())
+            }
+            .store(in: &cancellables)
+        
+        // ViewModel Output 구독 → 로그인 결과 처리
         viewModel.loginResult
-            .asDriver(onErrorJustReturn: .failure(NSError(domain: "", code: -1)))
-            .drive(onNext: { result in
+            .receive(on: DispatchQueue.main)
+            .sink { result in
                 switch result {
                 case .success(let token):
                     print("로그인 성공: \(token)")
-                    // TODO: 화면 전환 또는 토큰 저장 등 후속 처리
+                    // TODO: 성공 후 화면 전환 또는 토큰 저장 로직 추가
                 case .failure(let error):
                     print("로그인 실패: \(error.localizedDescription)")
-                    // TODO: 사용자 알림 처리 (Alert 등)
+                    // TODO: 실패 시 Alert 표시
                 }
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
     }
 }
-
-

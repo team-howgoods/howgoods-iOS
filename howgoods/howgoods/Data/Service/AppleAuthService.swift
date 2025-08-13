@@ -5,72 +5,115 @@
 //  Created by 양원식 on 8/3/25.
 //
 
+import Combine
 import AuthenticationServices
-import RxSwift
 
-/// Apple 로그인 인증을 처리하는 서비스 클래스입니다.
+/// Apple 로그인 기능을 담당하는 서비스
 ///
-/// `ASAuthorizationController`를 통해 Apple 로그인 인증을 요청하고,
-/// 결과를 `Observable<Result<String, Error>>` 형태로 반환합니다.
-///
-/// 반환되는 `String`은 Apple에서 발급한 `authorizationCode`입니다.
+/// - 역할:
+///   - `ASAuthorizationController`를 사용해 Apple ID 로그인 플로우 실행
+///   - 인증 후 발급받은 `authorizationCode`를 서버에 전달하여 최종 인증 토큰 발급
+///   - Combine 퍼블리셔로 로그인 성공/실패 결과 반환
 final class AppleAuthService: NSObject {
+    
+    // MARK: - Properties
+    
+    /// Apple 로그인 완료 후 결과를 전달하는 클로저
+    private var promise: ((Result<String, Error>) -> Void)?
+    
+    /// 서버와 통신하여 Apple 인증 토큰을 교환하는 네트워크 서비스
+    private let authNetworkService: AuthNetworkService
+    
+    /// Combine 구독 관리용 Set
+    private var cancellables = Set<AnyCancellable>()
 
-    /// 인증 결과를 전달하는 Subject (성공 시 code, 실패 시 error)
-    private let authorizationSubject = PublishSubject<Result<String, Error>>()
+    // MARK: - Initializer
+    
+    /// Apple 인증 서비스 초기화
+    /// - Parameter authNetworkService: 서버 통신을 담당하는 네트워크 서비스
+    init(authNetworkService: AuthNetworkService) {
+        self.authNetworkService = authNetworkService
+    }
 
-    /// Apple 로그인 인증을 시작하고 결과를 옵저버블로 반환합니다.
+    // MARK: - Public Methods
+    
+    /// Apple 로그인 실행
     ///
-    /// - Returns: `Observable` 형태의 Apple 로그인 결과 (`authorizationCode` 또는 `Error`)
-    func authorizeWithApple() -> Observable<Result<String, Error>> {
-        let request = ASAuthorizationAppleIDProvider().createRequest()
-        request.requestedScopes = [.email] // 이메일 범위 요청 (최초 로그인 시에만 제공)
+    /// - 동작 흐름:
+    ///   1. Apple 로그인 요청(`ASAuthorizationController`) 실행
+    ///   2. 인증 성공 시 `authorizationCode` 획득
+    ///   3. 해당 코드를 서버에 전달하여 최종 액세스 토큰 발급
+    ///   4. 성공 시 `.success(String)`, 실패 시 `.failure(Error)` 반환
+    ///
+    /// - Returns:
+    ///   - `AnyPublisher<Result<String, Error>, Never>`:
+    ///     - `.success(String)`: 최종 액세스 토큰
+    ///     - `.failure(Error)`: 인증 실패 에러
+    func authorizeWithApple() -> AnyPublisher<Result<String, Error>, Never> {
+        Future { [weak self] promise in
+            // Apple 인증 결과를 처리할 콜백 저장
+            self?.promise = { result in
+                switch result {
+                case .success(let code):
+                    // 서버에 코드 전달 → 최종 토큰 발급
+                    self?.authNetworkService.loginWithApple(code: code)
+                        .map { result in
+                            switch result {
+                            case .success(let authToken):
+                                return .success(authToken.accessToken)
+                            case .failure(let err):
+                                return .failure(err)
+                            }
+                        }
+                        .sink(receiveValue: { promise(.success($0)) })
+                        .store(in: &self!.cancellables)
 
-        let controller = ASAuthorizationController(authorizationRequests: [request])
-        controller.delegate = self
-        controller.presentationContextProvider = self
-        controller.performRequests()
+                case .failure(let error):
+                    promise(.success(.failure(error)))
+                }
+            }
 
-        return authorizationSubject.asObservable()
+            // Apple 로그인 요청 생성
+            let request = ASAuthorizationAppleIDProvider().createRequest()
+            request.requestedScopes = [.email] // 이메일 권한 요청
+
+            let controller = ASAuthorizationController(authorizationRequests: [request])
+            controller.delegate = self
+            controller.presentationContextProvider = self
+            controller.performRequests()
+        }
+        .eraseToAnyPublisher()
     }
 }
 
-// MARK: - 인증 결과 델리게이트
+// MARK: - ASAuthorizationControllerDelegate
 
 extension AppleAuthService: ASAuthorizationControllerDelegate {
-
-    /// Apple 인증 성공 시 호출됩니다.
-    ///
-    /// - Parameter authorization: 인증 결과 객체
+    
+    /// Apple 로그인 성공 시 호출
     func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
         guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
               let codeData = credential.authorizationCode,
               let code = String(data: codeData, encoding: .utf8) else {
-            // code 추출 실패
-            authorizationSubject.onNext(.failure(NSError(domain: "AppleAuth", code: -1)))
+            promise?(.failure(NSError(domain: "AppleAuth", code: -1)))
             return
         }
-
-        // 인증 코드 전달
-        authorizationSubject.onNext(.success(code))
-        authorizationSubject.onCompleted()
+        promise?(.success(code))
     }
 
-    /// Apple 인증 실패 시 호출됩니다.
+    /// Apple 로그인 실패 시 호출
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
-        authorizationSubject.onNext(.failure(error))
-        authorizationSubject.onCompleted()
+        promise?(.failure(error))
     }
 }
 
-// MARK: - 인증 프레젠테이션 Anchor 제공
+// MARK: - ASAuthorizationControllerPresentationContextProviding
 
 extension AppleAuthService: ASAuthorizationControllerPresentationContextProviding {
-
-    /// Apple 인증 UI가 표시될 윈도우를 반환합니다.
+    
+    /// Apple 로그인 UI를 표시할 윈도우 지정
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        return UIApplication.shared
-            .connectedScenes
+        UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
             .first { $0.isKeyWindow } ?? ASPresentationAnchor()

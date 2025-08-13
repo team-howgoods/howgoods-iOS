@@ -5,17 +5,21 @@
 //  Created by 양원식 on 8/3/25.
 //
 
-import RxSwift
+import Combine
 
-/// 소셜 로그인 인증을 수행하는 유즈케이스 인터페이스입니다.
+/// 로그인 유스케이스의 공통 인터페이스
 ///
-/// `LoginType`에 따라 해당 로그인 흐름을 실행하고, 서버로 인증 코드를 전송하여 access token을 획득합니다.
-/// 결과는 `Observable<Result<String, Error>>` 형태로 반환되어 ViewModel에서 반응형 처리에 용이합니다.
+/// - 역할:
+///   - 로그인 타입(Apple, Naver, Kakao)에 따라 로그인 로직을 실행
+///   - 실행 결과를 `Combine` 퍼블리셔 형태로 반환
 protocol LoginUseCaseProtocol {
-
-    /// 로그인 타입에 따른 인증 실행 메서드
+    
+    /// 로그인 실행
     ///
-    /// - Parameter type: 로그인 방식 (Apple, Naver, Kakao 등)
-    /// - Returns: 인증 성공 시 access token, 실패 시 Error 를 포함한 Rx Observable
-    func execute(type: LoginType) -> Observable<Result<String, Error>>
+    /// - Parameter type: 실행할 로그인 타입 (`LoginType`)
+    /// - Returns:
+    ///   - `AnyPublisher<Result<String, Error>, Never>`
+    ///     - `.success(String)`: 로그인 성공 시 토큰 반환
+    ///     - `.failure(Error)`: 로그인 실패 시 에러 반환
+    func execute(type: LoginType) -> AnyPublisher<Result<String, Error>, Never>
 }
