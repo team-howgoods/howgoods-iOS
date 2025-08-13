@@ -6,12 +6,12 @@
 //
 
 import UIKit
+import Combine
 
 final class TabBarView: UIView {
     // MARK: - Properties
     // 버튼과 레이블 간격
     private let spacing: CGFloat = 6
-    private let tapBarHight: CGFloat = 72
     
     // MARK: - UI Components
     
@@ -22,65 +22,37 @@ final class TabBarView: UIView {
         return stack
     }()
     
-    // MARK: - 홈 스택
-    private lazy var homeButton: UIButton = {
-        var config = UIButton.Configuration.plain()
-        config.image = UIImage(named: "Home")
-        config.imagePlacement = .top
-        config.imagePadding = spacing
-
-        let attrs = Typography.attributes(for: .caption2, color: .textAssistive)
-        let nsAttrString = NSAttributedString(string: "홈", attributes: attrs)
-        config.attributedTitle = AttributedString(nsAttrString)
-
-        let button = UIButton(configuration: config)
-        return button
-    }()
+    // MARK: - Private Buttons
+    private lazy var homeButton: UIButton = makeButton(title: "홈", imageName: "Home")
+    private lazy var allGoodsButton: UIButton = makeButton(title: "전체 굿즈", imageName: "plusButton")
+    private lazy var goodsMapButton: UIButton = makeButton(title: "덕질 지도", imageName: "plusButton")
+    private lazy var myPageButton: UIButton = makeButton(title: "마이페이지", imageName: "MyPage")
     
-    // MARK: - 전체 굿즈 스택
-    private lazy var allGoodsButton: UIButton = {
-        var config = UIButton.Configuration.plain()
-        config.image = UIImage(named: "plusButton")
-        config.imagePlacement = .top
-        config.imagePadding = spacing
+    // MARK: - Public Publishers
+    var homeButtonPublisher: AnyPublisher<Void, Never> {
+        homeButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
+    }
+    var allGoodsButtonPublisher: AnyPublisher<Void, Never> {
+        allGoodsButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
+    }
+    var goodsMapButtonPublisher: AnyPublisher<Void, Never> {
+        goodsMapButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
+    }
+    var myPageButtonPublisher: AnyPublisher<Void, Never> {
+        myPageButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
+    }
 
-        let attrs = Typography.attributes(for: .caption2, color: .textAssistive)
-        let nsAttrString = NSAttributedString(string: "전체 굿즈", attributes: attrs)
-        config.attributedTitle = AttributedString(nsAttrString)
-
-        let button = UIButton(configuration: config)
-        return button
-    }()
     
-    // MARK: - 덕질 지도 스택
-    private lazy var goodsMapButton: UIButton = {
+    // MARK: - Helpers
+    private func makeButton(title: String, imageName: String) -> UIButton {
         var config = UIButton.Configuration.plain()
-        config.image = UIImage(named: "plusButton")
+        config.image = UIImage(named: imageName)
         config.imagePlacement = .top
         config.imagePadding = spacing
-
         let attrs = Typography.attributes(for: .caption2, color: .textAssistive)
-        let nsAttrString = NSAttributedString(string: "덕질 지도", attributes: attrs)
-        config.attributedTitle = AttributedString(nsAttrString)
-
-        let button = UIButton(configuration: config)
-        return button
-    }()
-    
-    // MARK: - 마이페이지 스택
-    private lazy var myPageButton: UIButton = {
-        var config = UIButton.Configuration.plain()
-        config.image = UIImage(named: "MyPage")
-        config.imagePlacement = .top
-        config.imagePadding = spacing
-
-        let attrs = Typography.attributes(for: .caption2, color: .textAssistive)
-        let nsAttrString = NSAttributedString(string: "마이페이지", attributes: attrs)
-        config.attributedTitle = AttributedString(nsAttrString)
-
-        let button = UIButton(configuration: config)
-        return button
-    }()
+        config.attributedTitle = AttributedString(NSAttributedString(string: title, attributes: attrs))
+        return UIButton(configuration: config)
+    }
     
     // MARK: - Initializer
     override init(frame: CGRect) {
@@ -103,7 +75,6 @@ private extension TabBarView {
         setHierarchy()
         setStyles()
         setConstraints()
-        setBindings()
     }
     
     // MARK: - setHierarchy
@@ -136,10 +107,5 @@ private extension TabBarView {
             tabBarstackView.topAnchor.constraint(equalTo: topAnchor),
             tabBarstackView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor)
         ])
-    }
-    
-    // MARK: - setBindings
-    func setBindings() {
-        
     }
 }
