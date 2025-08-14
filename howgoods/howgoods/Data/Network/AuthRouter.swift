@@ -57,4 +57,14 @@ enum AuthRouter: URLRequestConvertible {
 
         // 요청 바디에 인증 코드 포함
         switch self {
-        case .login
+        case .loginWithApple(let code),
+             .loginWithNaver(let code),
+             .loginWithKakao(let code):
+            let dto = LoginRequestDTO(code: code)
+            request.httpBody = try JSONEncoder().encode(dto)
+        }
+
+        return request
+    }
+}
+
