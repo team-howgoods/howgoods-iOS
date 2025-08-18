@@ -49,7 +49,7 @@ final class TabBarView: UIView {
         config.image = UIImage(named: imageName)
         config.imagePlacement = .top
         config.imagePadding = spacing
-        let attrs = Typography.attributes(for: .caption2, color: .textAssistive)
+        let attrs = Typography.attributes(for: .captionSemibold12, color: .textAssistive)
         config.attributedTitle = AttributedString(NSAttributedString(string: title, attributes: attrs))
         return UIButton(configuration: config)
     }
