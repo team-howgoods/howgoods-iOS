@@ -9,39 +9,75 @@ import UIKit
 
 public enum Typography {
     public enum Style {
-        case title1, title2,
-             heading1, heading2,
-             headline1, headline2,
-             body1Normal, body1Reading, body2Reading,
-             label1Normal, label1Reading, label2,
-             caption1, caption2
+        // Title
+        case title1Semibold, title1Medium          // 32 / 48
+        case title2Semibold, title2Medium          // 28 / 38
+        
+        // Heading
+        case headingSemibold22                     // 22 / 30
+        case headingSemibold20                     // 20 / 28
+        
+        // Headline
+        case headlineSemibold, headlineMedium      // 18 / 26
+        
+        // Body
+        case body1Semibold, body1Medium            // 16 / 24
+        case body2Semibold, body2Medium            // 15 / 23
+        
+        // Label
+        case label1Semibold20, label1Medium22      // 14 / 20, 14 / 22
+        case label2Semibold                        // 13 / 18
+        
+        // Caption
+        case captionSemibold12, captionSemibold11  // 12 / 16, 11 / 14
     }
-
+    
     public struct Token {
-        public let size: CGFloat          // 폰트 크기(pt)
-        public let lineHeight: CGFloat    // 표의 '행간'(=목표 라인 높이, px≈pt)
-        public let trackingPercent: CGFloat // 자간(%)
+        public let size: CGFloat             // pt
+        public let lineHeight: CGFloat       // 목표 라인 높이(pt≈px)
+        public let trackingPercent: CGFloat  // 자간(%)
+        public let weight: AppFont.Weight
+        public init(size: CGFloat, lineHeight: CGFloat, trackingPercent: CGFloat, weight: AppFont.Weight) {
+            self.size = size
+            self.lineHeight = lineHeight
+            self.trackingPercent = trackingPercent
+            self.weight = weight
+        }
     }
-
-    // 표의 값 그대로 매핑
+    
+    // 이미지 스펙에 맞춘 토큰 세트
     public static let tokens: [Style: Token] = [
-        .title1:        .init(size: 32, lineHeight: 48, trackingPercent: -2),
-        .title2:        .init(size: 28, lineHeight: 38, trackingPercent: -1),
-        .heading1:      .init(size: 22, lineHeight: 30, trackingPercent: -0.02),
-        .heading2:      .init(size: 20, lineHeight: 28, trackingPercent: -0.2),
-        .headline1:     .init(size: 18, lineHeight: 26, trackingPercent: -0.2),
-        .headline2:     .init(size: 17, lineHeight: 24, trackingPercent:  1),
-        .body1Normal:   .init(size: 16, lineHeight: 24, trackingPercent: -0.2),
-        .body1Reading:  .init(size: 16, lineHeight: 26, trackingPercent: -0.2),
-        .body2Reading:  .init(size: 15, lineHeight: 24, trackingPercent:  0.2),
-        .label1Normal:  .init(size: 14, lineHeight: 20, trackingPercent: -0.2),
-        .label1Reading: .init(size: 14, lineHeight: 22, trackingPercent: -0.2),
-        .label2:        .init(size: 13, lineHeight: 18, trackingPercent:  0.8),
-        .caption1:      .init(size: 12, lineHeight: 16, trackingPercent:  1.2),
-        .caption2:      .init(size: 11, lineHeight: 14, trackingPercent:  2),
+        // Title
+        .title1Semibold: .init(size: 32, lineHeight: 48, trackingPercent: -2.0, weight: .semibold),
+        .title1Medium:   .init(size: 32, lineHeight: 48, trackingPercent: -2.0, weight: .medium),
+        .title2Semibold: .init(size: 28, lineHeight: 38, trackingPercent: -1.0, weight: .semibold),
+        .title2Medium:   .init(size: 28, lineHeight: 38, trackingPercent: -1.0, weight: .medium),
+        
+        // Heading
+        .headingSemibold22: .init(size: 22, lineHeight: 30, trackingPercent: -0.02, weight: .semibold),
+        .headingSemibold20: .init(size: 20, lineHeight: 28, trackingPercent: -0.2,  weight: .semibold),
+        
+        // Headline
+        .headlineSemibold:  .init(size: 18, lineHeight: 26, trackingPercent: -0.2, weight: .semibold),
+        .headlineMedium:    .init(size: 18, lineHeight: 26, trackingPercent: -0.2, weight: .medium),
+        
+        // Body
+        .body1Semibold:     .init(size: 16, lineHeight: 24, trackingPercent: -0.2, weight: .semibold),
+        .body1Medium:       .init(size: 16, lineHeight: 24, trackingPercent: -0.2, weight: .medium),
+        .body2Semibold:     .init(size: 15, lineHeight: 23, trackingPercent:  0.2, weight: .semibold),
+        .body2Medium:       .init(size: 15, lineHeight: 23, trackingPercent:  0.2, weight: .medium),
+        
+        // Label
+        .label1Semibold20:  .init(size: 14, lineHeight: 20, trackingPercent: -0.2, weight: .semibold),
+        .label1Medium22:    .init(size: 14, lineHeight: 22, trackingPercent: -0.2, weight: .medium),
+        .label2Semibold:    .init(size: 13, lineHeight: 18, trackingPercent:  0.8, weight: .semibold),
+        
+        // Caption
+        .captionSemibold12: .init(size: 12, lineHeight: 16, trackingPercent:  1.2, weight: .semibold),
+        .captionSemibold11: .init(size: 11, lineHeight: 14, trackingPercent:  2.0, weight: .semibold),
     ]
-
-    /// 행간(lineSpacing) + 자간(kern)만 적용한 속성
+    
+    // 공통 속성 생성
     public static func attributes(
         for style: Style,
         color: UIColor? = nil,
@@ -49,19 +85,18 @@ public enum Typography {
         lineBreak: NSLineBreakMode = .byTruncatingTail
     ) -> [NSAttributedString.Key: Any] {
         let t = tokens[style]!
-        let font = AppFont.suit(t.size)
-
-        // 목표 라인 높이 - 실제 폰트 라인 높이 = 추가 lineSpacing
+        let font = AppFont.suit(t.weight, size: t.size)
+        
+        // 목표 라인 높이 기반 추가 lineSpacing
         let lineSpacing = t.lineHeight - font.lineHeight
-
+        
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = alignment
         paragraph.lineBreakMode = lineBreak
-        paragraph.lineSpacing = lineSpacing   // ← 행간만
-
-        // 자간(% → pt)
+        paragraph.lineSpacing = lineSpacing
+        
         let kern = t.size * (t.trackingPercent / 100.0)
-
+        
         var attrs: [NSAttributedString.Key: Any] = [
             .font: font,
             .paragraphStyle: paragraph,
@@ -70,8 +105,13 @@ public enum Typography {
         if let color { attrs[.foregroundColor] = color }
         return attrs
     }
-
+    
     public static func styled(_ text: String, as style: Style, color: UIColor? = nil) -> NSAttributedString {
         NSAttributedString(string: text, attributes: attributes(for: style, color: color))
+    }
+    
+    public static func font(for style: Style) -> UIFont {
+        let t = tokens[style]!
+        return AppFont.suit(t.weight, size: t.size)
     }
 }

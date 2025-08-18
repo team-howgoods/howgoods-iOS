@@ -4,7 +4,8 @@
 <dict>
 	<key>UIAppFonts</key>
 	<array>
-		<string>SUIT-Regular.otf</string>
+		<string>SUIT-SemiBold.otf</string>
+		<string>SUIT-Medium.otf</string>
 	</array>
 	<key>NidUrlScheme</key>
 	<string>$(NidUrlScheme)</string>
