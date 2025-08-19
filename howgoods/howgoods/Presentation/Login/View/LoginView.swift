@@ -18,20 +18,21 @@ final class LoginView: UIView {
     // MARK: - UI Components
     
     /// Apple 로그인 버튼
-    /// - `ASAuthorizationAppleIDButton`은 시스템에서 제공하는 공식 Apple 로그인 버튼 스타일을 지원
-    private let appleLoginButton: ASAuthorizationAppleIDButton = {
-        let button = ASAuthorizationAppleIDButton()
-        button.cornerRadius = 8
+    /// - 버튼 이미지 리소스: "AppleLoginButton"
+    private let appleLoginButton: UIButton = {
+        let button = UIButton()
+        button.setImage(UIImage(named: "AppleLoginButton"), for: .normal)
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
 
     
     /// Naver 로그인 버튼
-    /// - 버튼 이미지 리소스: "NaverLoginButton_G"
+    /// - 버튼 이미지 리소스: "NaverLoginButton"
     private let naverLoginButton: UIButton = {
         let button = UIButton()
-        button.setImage(UIImage(named: "NaverLoginButton_G"), for: .normal)
+        button.setImage(UIImage(named: "NaverLoginButton"), for: .normal)
+        button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
     
@@ -40,13 +41,14 @@ final class LoginView: UIView {
     private let kakaoLoginButton: UIButton = {
         let button = UIButton()
         button.setImage(UIImage(named: "KakaoLoginButton"), for: .normal)
+        button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
 
     // MARK: - Getter
     
     /// 외부에서 접근 가능한 Apple 로그인 버튼
-    var getAppleLoginButton: ASAuthorizationAppleIDButton {
+    var getAppleLoginButton: UIButton {
         return appleLoginButton
     }
 
@@ -107,28 +109,26 @@ private extension LoginView {
     /// 오토레이아웃 제약 설정
     /// - 버튼 크기, 위치, 간격 지정
     func setConstraints() {
-        appleLoginButton.translatesAutoresizingMaskIntoConstraints = false
-        naverLoginButton.translatesAutoresizingMaskIntoConstraints = false
-        kakaoLoginButton.translatesAutoresizingMaskIntoConstraints = false
-
+ 
         NSLayoutConstraint.activate([
-            // appleLoginButton
-            appleLoginButton.centerXAnchor.constraint(equalTo: centerXAnchor),
-            appleLoginButton.heightAnchor.constraint(equalToConstant: 50),
-            appleLoginButton.widthAnchor.constraint(equalToConstant: 280),
+            // kakaoLoginButton
+            kakaoLoginButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+            kakaoLoginButton.heightAnchor.constraint(equalToConstant: 48),
+            kakaoLoginButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            kakaoLoginButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             
             // naverLoginButton
-            naverLoginButton.topAnchor.constraint(equalTo: appleLoginButton.bottomAnchor, constant: 16),
-            naverLoginButton.centerXAnchor.constraint(equalTo: centerXAnchor),
-            naverLoginButton.heightAnchor.constraint(equalToConstant: 50),
-            naverLoginButton.widthAnchor.constraint(equalToConstant: 280),
+            naverLoginButton.topAnchor.constraint(equalTo: kakaoLoginButton.bottomAnchor, constant: 16),
+            naverLoginButton.heightAnchor.constraint(equalToConstant: 48),
+            naverLoginButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            naverLoginButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             
-            // kakaoLoginButton
-            kakaoLoginButton.topAnchor.constraint(equalTo: naverLoginButton.bottomAnchor, constant: 16),
-            kakaoLoginButton.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -40),
-            kakaoLoginButton.centerXAnchor.constraint(equalTo: centerXAnchor),
-            kakaoLoginButton.heightAnchor.constraint(equalToConstant: 50),
-            kakaoLoginButton.widthAnchor.constraint(equalToConstant: 280)
+            // appleLoginButton
+            appleLoginButton.topAnchor.constraint(equalTo: naverLoginButton.bottomAnchor, constant: 16),
+            appleLoginButton.heightAnchor.constraint(equalToConstant: 48),
+            appleLoginButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            appleLoginButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            appleLoginButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -57)
         ])
 
     }
