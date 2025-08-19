@@ -14,6 +14,7 @@ final class HomeView: UIView {
     private let label: UILabel = {
         let label = UILabel()
         label.text = "홈"
+        label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
     
@@ -55,10 +56,9 @@ private extension HomeView {
     
     // MARK: - setConstraints
     func setConstraints() {
-        label.translatesAutoresizingMaskIntoConstraints = false
-        
         NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: centerXAnchor)
+            label.centerXAnchor.constraint(equalTo: centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
     }
     
