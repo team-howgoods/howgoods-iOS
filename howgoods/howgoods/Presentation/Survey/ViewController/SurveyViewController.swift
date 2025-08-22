@@ -12,7 +12,7 @@ final class SurveyViewController: UIViewController {
     
     // MARK: - Properties
     private let surveyView = SurveyView()
-    // private let viewModel: <#ViewModel#>
+    private let viewModel: SurveyViewModel
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Lifecycle
@@ -27,7 +27,8 @@ final class SurveyViewController: UIViewController {
     
     // MARK: - Initializer
     
-    init() {
+    init(viewModel: SurveyViewModel) {
+        self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -35,10 +36,13 @@ final class SurveyViewController: UIViewController {
     required init?(coder: NSCoder) {
         fatalError()
     }
+    
+    // Coordinator에서 주입할 이벤트 클로저
+    var didTapStart: (() -> Void)?
+    var didTapSkip: (() -> Void)?
 }
 
 // MARK: - UI Methods
-
 private extension SurveyViewController {
     func configure() {
         setHierarchy()
@@ -57,6 +61,7 @@ private extension SurveyViewController {
         // TODO: 추후 화면 전환 연결
             .sink {
                 print("지금 시작하기 클릭")
+                self.didTapStart?()
             }
             .store(in: &cancellables)
         
