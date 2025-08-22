@@ -119,13 +119,13 @@ private extension SurveyView {
         titleImage.widthAnchor.constraint(equalToConstant: 158),
         titleImage.heightAnchor.constraint(equalToConstant: 158),
         
-        startButton.topAnchor.constraint(equalTo: titleImage.bottomAnchor, constant: 203),
         startButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
         startButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
         startButton.heightAnchor.constraint(equalToConstant: 52),
+        startButton.bottomAnchor.constraint(equalTo: skipButton.topAnchor, constant: -11),
         
-        skipButton.topAnchor.constraint(equalTo: startButton.bottomAnchor, constant: 11),
-        skipButton.centerXAnchor.constraint(equalTo: centerXAnchor)
+        skipButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+        skipButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor)
         ])
     }
     
