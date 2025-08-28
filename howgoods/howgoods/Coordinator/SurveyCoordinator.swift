@@ -28,6 +28,16 @@ final class SurveyCoordinator: Coordinator {
     
     private func showStepOne() {
         let stepOneVC = SurveyStepOneViewController(viewModel: viewModel)
+
+        stepOneVC.didTapNext = { [weak self] in
+            self?.showStepTwo()
+        }
+        
         navigationController.pushViewController(stepOneVC, animated: true)
+    }
+    
+    private func showStepTwo() {
+        let stepTwoVC = SurveyStepTwoViewController(viewModel: viewModel)
+        navigationController.pushViewController(stepTwoVC, animated: true)
     }
 }
