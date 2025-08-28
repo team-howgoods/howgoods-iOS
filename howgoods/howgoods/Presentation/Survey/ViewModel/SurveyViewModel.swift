@@ -69,7 +69,7 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
         )
     }
     
-    // MARK: - Input
+    // MARK: - Input (단일 선택/해제)
     func select(step: SurveyStep, id: Int) {
         switch step {
         case .animation:
@@ -118,6 +118,17 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
         case .goods:
             selectedGoodsSubject.send([])
         }
+    }
+    
+    // MARK: - 전체 선택/해제 (goodsType 전용) — 선택 제한 무시
+    /// 전달된 모든 goodsType id를 한 번에 선택 (중복 제거)
+    func selectAllGoodsTypes(_ ids: [Int]) {
+        selectedGoodsTypesSubject.send(Array(Set(ids)))
+    }
+    
+    /// goodsType 선택 전체 해제
+    func clearAllGoodsTypes() {
+        selectedGoodsTypesSubject.send([])
     }
     
     // MARK: - Helpers
