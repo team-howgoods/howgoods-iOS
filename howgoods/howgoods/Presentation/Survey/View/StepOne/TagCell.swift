@@ -20,7 +20,7 @@ final class TagCell: UICollectionViewCell {
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.setText("", style: .label1Semibold20, color: .black)
+        label.setText("", style: .label1Semibold20, color: .textDefault)
         label.numberOfLines = 1
         label.lineBreakMode = .byTruncatingTail
         label.setContentHuggingPriority(.defaultLow, for: .horizontal)   // 넓게 늘어날 수 있게
@@ -57,7 +57,7 @@ final class TagCell: UICollectionViewCell {
     
     // MARK: - Public Methods
     func configure(title: String, isSelected: Bool) {
-        titleLabel.text = title
+        titleLabel.setText(title, style: .label1Semibold20, color: .textDefault)
         applySelectionStyle(isSelected: isSelected)
     }
 }

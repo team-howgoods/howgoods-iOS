@@ -49,6 +49,10 @@ final class SurveyStepOneViewController: UIViewController {
     required init?(coder: NSCoder) {
         fatalError()
     }
+    
+    // Coordinator에서 주입할 이벤트 클로저
+    var didTapNext: (() -> Void)?
+    var didTapSkip: (() -> Void)?
 }
 
 // MARK: - UI Methods
@@ -77,6 +81,7 @@ private extension SurveyStepOneViewController {
         surveyStepOneView.nextButtonPublisher
             .sink {
                 print("다음 클릭, requestDTO:", self.viewModel.requestDTO)
+                self.didTapNext?()
             }
             .store(in: &cancellables)
         
@@ -101,6 +106,7 @@ private extension SurveyStepOneViewController {
         surveyStepOneView.getNavigationBar.backButtonPublisher
             .sink { [weak self] in
                 print("뒤로가기 클릭")
+                self?.viewModel.reset(step: .animation)
                 self?.navigationController?.popViewController(animated: true)
             }
             .store(in: &cancellables)

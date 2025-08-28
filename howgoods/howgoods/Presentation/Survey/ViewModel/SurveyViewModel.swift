@@ -86,7 +86,7 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
                 selectedAnimationsSubject.send(values)
             }
         case .character:
-            updateSelection(subject: selectedCharactersSubject, id: id, max: 3)
+            updateSelection(subject: selectedCharactersSubject, id: id, max: 50)
         case .goodsType:
             updateSelection(subject: selectedGoodsTypesSubject, id: id, max: 3)
         case .goods:
