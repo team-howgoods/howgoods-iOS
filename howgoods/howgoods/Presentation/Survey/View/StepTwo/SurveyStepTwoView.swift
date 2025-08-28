@@ -41,13 +41,6 @@ final class SurveyStepTwoView: UIView {
         return button
     }()
     
-    private let skipButton: SkipButton = {
-        let button = SkipButton(frame: .zero, title: "건너뛰기", color: .gray600)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.accessibilityLabel = "건너뛰기"
-        return button
-    }()
-    
     // MARK: - tagCollectionView
     private lazy var tagCollectionView: UICollectionView = {
         let layout = UICollectionViewCompositionalLayout { sectionIndex, layoutEnvironment in
@@ -67,10 +60,6 @@ final class SurveyStepTwoView: UIView {
     // MARK: - Public Publishers
     var nextButtonPublisher: AnyPublisher<Void, Never> {
         nextButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
-    }
-    
-    var skipButtonPublisher: AnyPublisher<Void, Never> {
-        skipButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
     }
     
     var getNavigationBar: CustomNavigationBar {
@@ -127,8 +116,7 @@ private extension SurveyStepTwoView {
             requiredLabel,
             headTitle,
             tagCollectionView,
-            nextButton,
-            skipButton
+            nextButton
         )
     }
 
@@ -161,10 +149,7 @@ private extension SurveyStepTwoView {
             nextButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             nextButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             nextButton.heightAnchor.constraint(equalToConstant: 52),
-            nextButton.bottomAnchor.constraint(equalTo: skipButton.topAnchor, constant: -11),
-            
-            skipButton.centerXAnchor.constraint(equalTo: centerXAnchor),
-            skipButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor)
+            nextButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -11),
         ])
     }
 }

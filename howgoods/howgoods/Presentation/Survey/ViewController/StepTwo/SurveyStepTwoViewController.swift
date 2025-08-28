@@ -62,7 +62,6 @@ final class SurveyStepTwoViewController: UIViewController {
     
     // Coordinator에서 주입할 이벤트 클로저
     var didTapNext: (() -> Void)?
-    var didTapSkip: (() -> Void)?
     
     // MARK: - Lifecycle
     override func loadView() {
@@ -116,13 +115,6 @@ private extension SurveyStepTwoViewController {
                 guard let self = self else { return }
                 print("다음 클릭, requestDTO:", self.viewModel.requestDTO)
                 self.didTapNext?()
-            }
-            .store(in: &cancellables)
-        
-        surveyStepTwoView.skipButtonPublisher
-            .sink { [weak self] in
-                print("건너뛰기 클릭")
-                self?.didTapSkip?()
             }
             .store(in: &cancellables)
         
