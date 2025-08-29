@@ -76,7 +76,7 @@ private extension TagCell {
     
     func setStyles() {
         contentView.layer.borderWidth = 1
-        contentView.layer.borderColor = UIColor.gray400.cgColor
+        contentView.layer.borderColor = UIColor.lineAlternative.cgColor
         contentView.backgroundColor = .white
     }
     
@@ -94,15 +94,17 @@ private extension TagCell {
     
     func applySelectionStyle(isSelected: Bool) {
         if isSelected {
-            contentView.layer.borderWidth = 2
+            contentView.layer.borderWidth = 1.5
             contentView.layer.borderColor = UIColor.primary.cgColor
-            iconView.image = UIImage(systemName: "minus")
+            contentView.backgroundColor = .green50
+            iconView.image = UIImage(systemName: "plus")
             iconView.tintColor = .primary
         } else {
             contentView.layer.borderWidth = 1
             contentView.layer.borderColor = UIColor.gray400.cgColor
             iconView.image = UIImage(systemName: "plus")
-            iconView.tintColor = .gray
+            contentView.backgroundColor = .white
+            iconView.tintColor = .textDefault
         }
     }
 }

@@ -13,11 +13,6 @@ final class SurveyStepOneView: UIView {
     private var collectionViewHeightConstraint: NSLayoutConstraint?
     
     // MARK: - UI Components
-    private let navigationBar: CustomNavigationBar = {
-        let nv = CustomNavigationBar()
-        nv.translatesAutoresizingMaskIntoConstraints = false
-        return nv
-    }()
     
     private let scrollView: UIScrollView = {
         let sv = UIScrollView()
@@ -31,28 +26,10 @@ final class SurveyStepOneView: UIView {
         return cv
     }()
     
-    private let requiredLabel: UILabel = {
-        let label = UILabel()
-        label.setText("필수", style: .captionSemibold12, color: .primary)
-        label.textAlignment = .left
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
     
     private let headTitle: UILabel = {
         let label = UILabel()
-        label.setText("가장 좋아하는\n애니메이션을 골라주세요!", style: .headingSemibold22, color: .textDefault)
-        label.textAlignment = .left
-        label.numberOfLines = 0
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
-    
-    private let captionTitle: UILabel = {
-        let label = UILabel()
-        label.text = "최대 3개까지만 선택 가능해요"
-        label.font = .systemFont(ofSize: 14, weight: .regular)
-        label.textColor = .lineDefault
+        label.setText("먼저 가장 좋아하는 애니메이션을 골라주세요!", style: .headlineSemibold, color: .textDefault)
         label.textAlignment = .left
         label.numberOfLines = 0
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -72,33 +49,19 @@ final class SurveyStepOneView: UIView {
         return cv
     }()
     
-    private let nextButton: SolidButton = {
-        let button = SolidButton(frame: .zero, title: "다음", color: .primary)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        return button
-    }()
-    
-    private let skipButton: SkipButton = {
-        let button = SkipButton(frame: .zero, title: "건너뛰기", color: .gray600)
+    private let twoButton: TwoButtonBar = {
+        let button = TwoButtonBar()
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
     
     // MARK: - Public Publishers
-    var nextButtonPublisher: AnyPublisher<Void, Never> {
-        nextButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
-    }
-    
-    var skipButtonPublisher: AnyPublisher<Void, Never> {
-        skipButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
-    }
-    
     var getTagCollectionView: UICollectionView {
         tagCollectionView
     }
     
-    var getNavigationBar: CustomNavigationBar {
-        navigationBar
+    var getTwoButton: TwoButtonBar {
+        twoButton
     }
     
     // MARK: - Initializer
@@ -129,18 +92,14 @@ private extension SurveyStepOneView {
     
     func setHierarchy() {
         addSubviews(
-            navigationBar,
             scrollView,
-            nextButton,
-            skipButton
+            twoButton
         )
         
         scrollView.addSubview(contentView)
         
         contentView.addSubviews(
-            requiredLabel,
             headTitle,
-            captionTitle,
             tagCollectionView
         )
     }
@@ -151,15 +110,12 @@ private extension SurveyStepOneView {
     
     func setConstraints() {
         NSLayoutConstraint.activate([
-            navigationBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
-            navigationBar.leadingAnchor.constraint(equalTo: leadingAnchor),
-            navigationBar.trailingAnchor.constraint(equalTo: trailingAnchor),
             
             // 스크롤뷰
-            scrollView.topAnchor.constraint(equalTo: navigationBar.bottomAnchor),
+            scrollView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: nextButton.topAnchor, constant: -16),
+            scrollView.bottomAnchor.constraint(equalTo: twoButton.topAnchor, constant: -16),
             
             // 콘텐츠 뷰
             contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
@@ -168,18 +124,11 @@ private extension SurveyStepOneView {
             contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
             
-            // 라벨 + 타이틀 + 캡션
-            requiredLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 13),
-            requiredLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            
-            headTitle.topAnchor.constraint(equalTo: requiredLabel.bottomAnchor, constant: 4),
+            headTitle.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 13),
             headTitle.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             
-            captionTitle.topAnchor.constraint(equalTo: headTitle.bottomAnchor, constant: 12),
-            captionTitle.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            
             // 컬렉션뷰
-            tagCollectionView.topAnchor.constraint(equalTo: captionTitle.bottomAnchor, constant: 16),
+            tagCollectionView.topAnchor.constraint(equalTo: headTitle.bottomAnchor, constant: 16),
             tagCollectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             tagCollectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             tagCollectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
@@ -191,13 +140,10 @@ private extension SurveyStepOneView {
         
         // 버튼 (하단 고정)
         NSLayoutConstraint.activate([
-            nextButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            nextButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            nextButton.heightAnchor.constraint(equalToConstant: 52),
-            nextButton.bottomAnchor.constraint(equalTo: skipButton.topAnchor, constant: -11),
-            
-            skipButton.centerXAnchor.constraint(equalTo: centerXAnchor),
-            skipButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor)
+            twoButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+            twoButton.leadingAnchor.constraint(equalTo: leadingAnchor),
+            twoButton.trailingAnchor.constraint(equalTo: trailingAnchor),
+            twoButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -11)
         ])
     }
 }

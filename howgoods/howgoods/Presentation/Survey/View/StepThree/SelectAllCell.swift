@@ -13,7 +13,7 @@ final class SelectAllCell: UICollectionViewCell {
 
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.setText("전체 선택", style: .label1Semibold20, color: .white)
+        label.setText("전체 선택", style: .body1Semibold, color: .white)
         label.translatesAutoresizingMaskIntoConstraints = false
         label.textAlignment = .center
         return label
