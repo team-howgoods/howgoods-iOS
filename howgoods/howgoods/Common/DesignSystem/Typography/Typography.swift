@@ -21,15 +21,15 @@ public enum Typography {
         case headlineSemibold, headlineMedium      // 18 / 26
         
         // Body
-        case body1Semibold, body1Medium            // 16 / 24
-        case body2Semibold, body2Medium            // 15 / 23
+        case body1Semibold, body1Medium, body1Reguler            // 16 / 24
+        case body2Semibold, body2Medium, body2Reguler            // 15 / 23
         
         // Label
         case label1Semibold20, label1Medium22      // 14 / 20, 14 / 22
         case label2Semibold                        // 13 / 18
         
         // Caption
-        case captionSemibold12, captionSemibold11  // 12 / 16, 11 / 14
+        case captionSemibold12, captionSemibold11, captionRagular11  // 12 / 16, 11 / 14
     }
     
     public struct Token {
@@ -59,22 +59,27 @@ public enum Typography {
         
         // Headline
         .headlineSemibold:  .init(size: 18, lineHeight: 26, trackingPercent: -0.2, weight: .semibold),
-        .headlineMedium:    .init(size: 18, lineHeight: 26, trackingPercent: -0.2, weight: .medium),
+        .headlineMedium:    .init(size: 18, lineHeight: 26, trackingPercent: -1.0, weight: .medium),
         
         // Body
-        .body1Semibold:     .init(size: 16, lineHeight: 24, trackingPercent: -0.2, weight: .semibold),
-        .body1Medium:       .init(size: 16, lineHeight: 24, trackingPercent: -0.2, weight: .medium),
-        .body2Semibold:     .init(size: 15, lineHeight: 23, trackingPercent:  0.2, weight: .semibold),
-        .body2Medium:       .init(size: 15, lineHeight: 23, trackingPercent:  0.2, weight: .medium),
+        .body1Semibold:     .init(size: 16, lineHeight: 26, trackingPercent: -0.2, weight: .semibold),
+        .body1Medium:       .init(size: 16, lineHeight: 16.0 * 1.4, trackingPercent: -0.2, weight: .medium),
+        .body1Reguler:      .init(size: 16, lineHeight: 16.0 * 1.4, trackingPercent: -0.2, weight: .regular),
+        
+        .body2Semibold:     .init(size: 15, lineHeight: 15.0 * 1.4, trackingPercent: 0.2, weight: .semibold),
+        .body2Medium:       .init(size: 15, lineHeight: 15.0 * 1.4, trackingPercent: 0.2, weight: .medium),
+        .body2Reguler:      .init(size: 15, lineHeight: 15.0 * 1.4, trackingPercent: 0.2, weight: .regular),
         
         // Label
-        .label1Semibold20:  .init(size: 14, lineHeight: 20, trackingPercent: -0.2, weight: .semibold),
-        .label1Medium22:    .init(size: 14, lineHeight: 22, trackingPercent: -0.2, weight: .medium),
-        .label2Semibold:    .init(size: 13, lineHeight: 18, trackingPercent:  0.8, weight: .semibold),
+        .label1Semibold20:  .init(size: 14, lineHeight: 14.0 * 1.4, trackingPercent: -0.2, weight: .semibold),
+        .label1Medium22:    .init(size: 14, lineHeight: 14.0 * 1.4, trackingPercent: -0.2, weight: .medium),
+        
+        .label2Semibold:    .init(size: 13, lineHeight: 13.0 * 1.4, trackingPercent:  0.8, weight: .semibold),
         
         // Caption
-        .captionSemibold12: .init(size: 12, lineHeight: 16, trackingPercent:  1.2, weight: .semibold),
-        .captionSemibold11: .init(size: 11, lineHeight: 14, trackingPercent:  2.0, weight: .semibold),
+        .captionSemibold12: .init(size: 12, lineHeight: 12.0 * 1.4, trackingPercent:  1.2, weight: .semibold),
+        .captionSemibold11: .init(size: 11, lineHeight: 11.0 * 1.4, trackingPercent:  2.0, weight: .semibold),
+        .captionRagular11: .init(size: 11, lineHeight: 11.0 * 1.4, trackingPercent:  2.0, weight: .regular),
     ]
     
     // 공통 속성 생성
