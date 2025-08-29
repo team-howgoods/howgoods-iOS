@@ -11,6 +11,8 @@ final class SurveyCoordinator: Coordinator {
     let navigationController: UINavigationController
     private let viewModel: SurveyViewModel
     
+    var onFinish: (() -> Void)?
+    
     init(navigationController: UINavigationController, viewModel: SurveyViewModel) {
         self.navigationController = navigationController
         self.viewModel = viewModel
@@ -33,6 +35,10 @@ final class SurveyCoordinator: Coordinator {
             self?.showStepTwo()
         }
         
+        stepOneVC.didTapSkip = { [weak self] in
+            self?.showNoPreference()
+        }
+        
         navigationController.pushViewController(stepOneVC, animated: true)
     }
     
@@ -49,5 +55,15 @@ final class SurveyCoordinator: Coordinator {
     private func showStepThree() {
         let stepThreeVC = SurveyStepThreeViewController(viewModel: viewModel)
         navigationController.pushViewController(stepThreeVC, animated: true)
+    }
+    
+    private func showNoPreference() {
+        let noPreferenceVC = SurveyNoPreferenceViewController()
+        
+        noPreferenceVC.didTapHome = { [weak self] in
+            self?.onFinish?()
+        }
+        
+        navigationController.pushViewController(noPreferenceVC, animated: true)
     }
 }

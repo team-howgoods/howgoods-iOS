@@ -78,16 +78,18 @@ private extension SurveyStepOneViewController {
     
     // MARK: - Actions
     func setActions() {
-        surveyStepOneView.nextButtonPublisher
+        surveyStepOneView.getTwoButton.primaryTapPublisher
             .sink {
-                print("다음 클릭, requestDTO:", self.viewModel.requestDTO)
+                print("완료 클릭, requestDTO:", self.viewModel.requestDTO)
                 self.didTapNext?()
             }
             .store(in: &cancellables)
         
-        surveyStepOneView.skipButtonPublisher
+        surveyStepOneView.getTwoButton.secondaryTapPublisher
             .sink {
-                print("건너뛰기 클릭")
+                print("다음에 할께요 클릭")
+                self.viewModel.reset(step: .animation)
+                self.didTapSkip?()
             }
             .store(in: &cancellables)
     }
@@ -99,15 +101,6 @@ private extension SurveyStepOneViewController {
             .sink { [weak self] _ in
                 self?.surveyStepOneView.getTagCollectionView.reloadData()
                 self?.surveyStepOneView.updateCollectionViewHeight()
-            }
-            .store(in: &cancellables)
-        
-        // 뒤로가기 버튼 탭 이벤트 구독
-        surveyStepOneView.getNavigationBar.backButtonPublisher
-            .sink { [weak self] in
-                print("뒤로가기 클릭")
-                self?.viewModel.reset(step: .animation)
-                self?.navigationController?.popViewController(animated: true)
             }
             .store(in: &cancellables)
     }
