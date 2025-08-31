@@ -71,7 +71,7 @@ private extension GoodsTypeCell {
     func configureUI() {
         guard let goodsType = goodsType else { return }
         nameLabel.setText(goodsType.name, style: .captionSemibold12, color: .white)
-        imageView.setImage(urlOrName: goodsType.imageUrl, placeholderName: "Sample")
+        imageView.setImage(urlOrName: goodsType.imageUrl)
         updateSelectionUI()
     }
 

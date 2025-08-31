@@ -79,7 +79,7 @@ private extension SurveyStepOneViewController {
             }
             .store(in: &cancellables)
         
-        surveyStepOneView.getTwoButton.secondaryTapPublisher
+        surveyStepOneView.getTwoButton.skipButtonTapPublisher
             .sink {
                 print("다음에 할께요 클릭")
                 self.viewModel.reset(step: .animation)

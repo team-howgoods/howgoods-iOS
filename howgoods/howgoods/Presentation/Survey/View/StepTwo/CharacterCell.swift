@@ -96,7 +96,7 @@ private extension CharacterCell {
 
         imageView.layoutIfNeeded()
 
-        imageView.setImage(urlOrName: character.imageUrl, placeholderName: "")
+        imageView.setImage(urlOrName: character.imageUrl)
 
         updateSelectionUI()
     }
