@@ -12,18 +12,15 @@ final class SurveyNoPreferenceView: UIView {
     // MARK: - Properties
     
     // MARK: - UI Components
-    private let titleImage: UIImageView = {
-        // TODO: 현재 임시 이미지, 추후 바꾸기.
-        let image = UIImageView()
-        image.image = UIImage(systemName: "square.fill")
-        image.translatesAutoresizingMaskIntoConstraints = false
-        return image
+    private let contentView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
     }()
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.setText("좋아하는 애니메이션을\n선택하지 않으셨어요!", style: .headlineSemibold, color: .textDefault)
-        label.numberOfLines = 0
+        label.setText("좋아하는 애니메이션을 선택하지 않으셨어요!", style: .headlineSemibold, color: .textDefault)
         label.textAlignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -31,8 +28,7 @@ final class SurveyNoPreferenceView: UIView {
     
     private let captionLabel: UILabel = {
         let label = UILabel()
-        label.setText("대신 지금 인기 많은 굿즈를 보여드릴게요\n(설정은 언제든 변경할 수 있어요)", style: .captionRagular11, color: .textAssistive)
-        label.numberOfLines = 0
+        label.setText("대신 지금 인기 많은 굿즈를 보여드릴게요\n(설정은 언제든 변경할 수 있어요)", style: .body1Medium, color: .textDefault)
         label.textAlignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -75,7 +71,10 @@ private extension SurveyNoPreferenceView {
     // MARK: - setHierarchy
     func setHierarchy() {
         addSubviews(
-            titleImage,
+            contentView
+        )
+        
+        contentView.addSubviews(
             titleLabel,
             captionLabel,
             homeButton
@@ -90,21 +89,22 @@ private extension SurveyNoPreferenceView {
     // MARK: - setConstraints
     func setConstraints() {
         NSLayoutConstraint.activate([
-            titleImage.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 141),
-            titleImage.centerXAnchor.constraint(equalTo: centerXAnchor),
-            titleImage.widthAnchor.constraint(equalToConstant: 181),
-            titleImage.heightAnchor.constraint(equalToConstant: 188),
             
-            titleLabel.topAnchor.constraint(equalTo: titleImage.bottomAnchor, constant: 28),
-            titleLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
+            contentView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            contentView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            contentView.widthAnchor.constraint(equalTo: widthAnchor),
             
-            captionLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 9),
-            captionLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
+            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor),
+            titleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             
-            homeButton.topAnchor.constraint(equalTo: captionLabel.bottomAnchor, constant: 28),
+            captionLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            captionLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            
+            homeButton.topAnchor.constraint(equalTo: captionLabel.bottomAnchor, constant: 24),
+            homeButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            homeButton.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             homeButton.widthAnchor.constraint(equalToConstant: 165),
-            homeButton.heightAnchor.constraint(equalToConstant: 49),
-            homeButton.centerXAnchor.constraint(equalTo: centerXAnchor)
+            homeButton.heightAnchor.constraint(equalToConstant: 49)
         ])
     }
     

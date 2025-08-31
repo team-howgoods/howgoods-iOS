@@ -13,7 +13,6 @@ final class SurveyNoPreferenceViewController: UIViewController {
     // MARK: - Properties
     private let surveyNoPreferenceView = SurveyNoPreferenceView()
     private var cancellables = Set<AnyCancellable>()
-    // private let viewModel: <#ViewModel#>
     
     // MARK: - Lifecycle
     
