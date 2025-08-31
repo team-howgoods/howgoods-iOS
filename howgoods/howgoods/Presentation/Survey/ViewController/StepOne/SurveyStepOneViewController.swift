@@ -15,14 +15,7 @@ final class SurveyStepOneViewController: UIViewController {
     private let viewModel: SurveyViewModel
     private var cancellables = Set<AnyCancellable>()
     
-    /// 임시 데이터 (API 연동 시 교체 예정)
-    private let dummyAnimations: [Animation] = [
-        Animation(id: 1, name: "귀멸의 칼날", imageUrl: ""),
-        Animation(id: 2, name: "원피스", imageUrl: ""),
-        Animation(id: 3, name: "나루토", imageUrl: ""),
-        Animation(id: 4, name: "주술회전", imageUrl: ""),
-        Animation(id: 5, name: "진격의 거인", imageUrl: "")
-    ]
+    private var animations: [Animation] = []
     
     // MARK: - Lifecycle
     override func loadView() {
@@ -32,6 +25,7 @@ final class SurveyStepOneViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configure()
+        viewModel.loadAnimations()
     }
     
     override func viewDidLayoutSubviews() {
@@ -103,13 +97,22 @@ private extension SurveyStepOneViewController {
                 self?.surveyStepOneView.updateCollectionViewHeight()
             }
             .store(in: &cancellables)
+        
+        viewModel.animations
+            .receive(on: RunLoop.main)
+            .sink { [weak self] animations in
+                self?.animations = animations
+                self?.surveyStepOneView.getTagCollectionView.reloadData()
+                self?.surveyStepOneView.updateCollectionViewHeight()
+            }
+            .store(in: &cancellables)
     }
 }
 
 // MARK: - UICollectionViewDataSource
 extension SurveyStepOneViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        dummyAnimations.count + 1 // 마지막에 "없어요" 셀 추가
+        animations.count + 1
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -120,12 +123,11 @@ extension SurveyStepOneViewController: UICollectionViewDataSource {
             return UICollectionViewCell()
         }
         
-        if indexPath.item == dummyAnimations.count {
-            // "없어요" 셀
+        if indexPath.item == 0 {
             let isSelected = viewModel.requestDTO.animationSurveyResults.contains { $0.animationId == -1 }
             cell.configure(title: "좋아하는 애니메이션이 없어요", isSelected: isSelected)
         } else {
-            let item = dummyAnimations[indexPath.item]
+            let item = animations[indexPath.item - 1]
             let isSelected = viewModel.requestDTO.animationSurveyResults.contains { $0.animationId == item.id }
             cell.configure(title: item.name, isSelected: isSelected)
         }
@@ -137,10 +139,10 @@ extension SurveyStepOneViewController: UICollectionViewDataSource {
 // MARK: - UICollectionViewDelegate
 extension SurveyStepOneViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if indexPath.item == dummyAnimations.count {
+        if indexPath.item == 0 {
             viewModel.select(step: .animation, id: -1)
         } else {
-            let item = dummyAnimations[indexPath.item]
+            let item = animations[indexPath.item - 1]
             
             if viewModel.requestDTO.animationSurveyResults.contains(where: { $0.animationId == item.id }) {
                 viewModel.deselect(step: .animation, id: item.id)

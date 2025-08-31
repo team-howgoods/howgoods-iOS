@@ -96,8 +96,7 @@ private extension CharacterCell {
 
         imageView.layoutIfNeeded()
 
-        // character.imageUrl 에 "https://..." 혹은 "assetName" 이 들어온다고 가정
-        imageView.setImage(urlOrName: character.imageUrl, placeholderName: "Sample")
+        imageView.setImage(urlOrName: character.imageUrl, placeholderName: "")
 
         updateSelectionUI()
     }

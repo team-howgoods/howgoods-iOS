@@ -11,31 +11,26 @@ import Combine
 final class SurveyStepThreeViewController: UIViewController {
 
     // MARK: - Properties
-    private let contentView = SurveyStepThreeView()
-    private var collectionView: UICollectionView { contentView.getCollectionView }
+    private let surveyStepThreeView = SurveyStepThreeView()
+    private var collectionView: UICollectionView { surveyStepThreeView.getCollectionView }
     private let viewModel: SurveyViewModel
     private var cancellables = Set<AnyCancellable>()
 
-    private let demoGoodsTypes: [GoodsType] = [
-        GoodsType(goodsTypeId: 1, name: "아크릴 스탠드", imageUrl: "https://cdn.mariooutlet.com/Product/A0462/B6W/P000733796_d1.jpg"),
-        GoodsType(goodsTypeId: 2, name: "티셔츠",       imageUrl: "https://cdn.mariooutlet.com/Product/A0462/B6W/P000733796_d1.jpg"),
-        GoodsType(goodsTypeId: 3, name: "키링",         imageUrl: "https://cdn.mariooutlet.com/Product/A0462/B6W/P000733796_d1.jpg"),
-        GoodsType(goodsTypeId: 4, name: "마스코트",     imageUrl: "https://cdn.mariooutlet.com/Product/A0462/B6W/P000733796_d1.jpg"),
-        GoodsType(goodsTypeId: 5, name: "문구류",       imageUrl: "https://cdn.mariooutlet.com/Product/A0462/B6W/P000733796_d1.jpg"),
-        GoodsType(goodsTypeId: 6, name: "포토카드",     imageUrl: "https://cdn.mariooutlet.com/Product/A0462/B6W/P000733796_d1.jpg"),
-        GoodsType(goodsTypeId: 7, name: "인형",         imageUrl: "https://cdn.mariooutlet.com/Product/A0462/B6W/P000733796_d1.jpg"),
-        GoodsType(goodsTypeId: 8, name: "기타",         imageUrl: "https://cdn.mariooutlet.com/Product/A0462/B6W/P000733796_d1.jpg"),
-    ]
 
     // “전체 선택” + 일반 아이템
     private enum Item {
         case selectAll
         case goods(GoodsType)
     }
-    private lazy var items: [Item] = [.selectAll] + demoGoodsTypes.map { .goods($0) }
+    private lazy var items: [Item] = []
 
     // 편의
-    private var allIDs: [Int] { demoGoodsTypes.map(\.goodsTypeId) }
+    private var allIDs: [Int] {
+        items.compactMap {
+            if case .goods(let g) = $0 { return g.goodsTypeId }
+            return nil
+        }
+    }
     private var selectedIDs: [Int] {
         viewModel.requestDTO.goodsTypeSurveyResults.map { $0.goodsTypeId }
     }
@@ -53,11 +48,14 @@ final class SurveyStepThreeViewController: UIViewController {
     required init?(coder: NSCoder) { fatalError() }
 
     // MARK: - Lifecycle
-    override func loadView() { self.view = contentView }
+    override func loadView() {
+        self.view = surveyStepThreeView
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         configure()
+        viewModel.loadGoodsTypes()
     }
 }
 
@@ -71,7 +69,7 @@ private extension SurveyStepThreeViewController {
     func setCollectionView() {
         // 세로 스크롤 그리드(레이아웃은 View가 제공)
         let layout = UICollectionViewCompositionalLayout { [weak self] _, _ in
-            return self?.contentView.createGoodsTypeSection()
+            return self?.surveyStepThreeView.createGoodsTypeSection()
         }
         collectionView.collectionViewLayout = layout
         collectionView.allowsMultipleSelection = true // 수동 선택은 VM에서 3개 제한
@@ -81,7 +79,7 @@ private extension SurveyStepThreeViewController {
 
     func setActions() {
         // 다음
-        contentView.nextButtonPublisher
+        surveyStepThreeView.nextButtonPublisher
             .sink { [weak self] in
                 guard let self else { return }
                 print("다음 클릭, requestDTO:", self.viewModel.requestDTO)
@@ -90,9 +88,9 @@ private extension SurveyStepThreeViewController {
             .store(in: &cancellables)
 
         // 뒤로가기
-        contentView.getNavigationBar.backButtonPublisher
+        surveyStepThreeView.getNavigationBar.backButtonPublisher
             .sink { [weak self] in
-                self?.viewModel.reset(step: .goodsType)
+                self?.viewModel.reset(step: .character)
                 self?.navigationController?.popViewController(animated: true)
             }
             .store(in: &cancellables)
@@ -102,8 +100,23 @@ private extension SurveyStepThreeViewController {
         // 선택 상태 변경 시 셀 동기화(버튼 타이틀 갱신 X)
         viewModel.selectedGoodsTypes
             .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.collectionView.reloadData()
+            .sink { [weak self] selected in
+                guard let self else { return }
+                
+                let count = selected.count
+                self.surveyStepThreeView.setNextButtonEnabled(count > 0)
+                
+                self.collectionView.reloadData()
+            }
+            .store(in: &cancellables)
+        
+        // 굿즈 타입 리스트 바인딩
+        viewModel.goodsTypes
+            .receive(on: RunLoop.main)
+            .sink { [weak self] list in
+                guard let self else { return }
+                self.items = [.selectAll] + list.map { .goods($0) }
+                self.collectionView.reloadData()
             }
             .store(in: &cancellables)
     }
@@ -179,7 +192,7 @@ extension SurveyStepThreeViewController: UICollectionViewDelegate {
         case .selectAll:
             toggleSelectAll()
         case .goods(let model):
-            viewModel.select(step: .goodsType, id: model.goodsTypeId) // 수동 선택(최대 3개)
+            viewModel.select(step: .goodsType, id: model.goodsTypeId)
         }
     }
 

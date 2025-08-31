@@ -30,7 +30,7 @@ final class TwoButtonBar: UIView {
          primaryColor: UIColor = .primary
     ) {
         self.secondaryButton = SecondaryButton(title: secondaryTitle)
-        self.primaryButton = OneButton(frame: .zero, title: primaryTitle, color: primaryColor)
+        self.primaryButton = OneButton(frame: .zero, title: primaryTitle, color: primaryColor, disabledColor: .bgDelete)
         super.init(frame: .zero)
         configure()
     }

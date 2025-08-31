@@ -29,6 +29,7 @@ final class SurveyCoordinator: Coordinator {
     }
     
     private func showStepOne() {
+        
         let stepOneVC = SurveyStepOneViewController(viewModel: viewModel)
 
         stepOneVC.didTapNext = { [weak self] in

@@ -10,9 +10,11 @@ import UIKit
 class OneButton: UIButton {
     
     private let color: UIColor
+    private let disabledColor: UIColor
     
-    init(frame: CGRect, title: String, color: UIColor) {
+    init(frame: CGRect, title: String, color: UIColor, disabledColor: UIColor) {
         self.color = color
+        self.disabledColor = disabledColor
         super.init(frame: frame)
         configure(title: title)
     }
@@ -35,6 +37,22 @@ class OneButton: UIButton {
         )
     }
     
+    override var isEnabled: Bool {
+        didSet {
+            updateColors()
+        }
+    }
+    
+    private func updateColors() {
+        guard var config = self.configuration else { return }
+        config.baseBackgroundColor = isEnabled ? color : disabledColor
+        config.baseForegroundColor = .white
+        self.configuration = config
+    }
+    
+    func updateTitle(_ title: String) {
+        setFont(title: title, style: .body2Semibold, color: .white)
+    }
 }
 
 private extension OneButton {

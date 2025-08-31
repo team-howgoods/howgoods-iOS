@@ -14,18 +14,13 @@ final class SurveyStepOneView: UIView {
     
     // MARK: - UI Components
     
-    private let scrollView: UIScrollView = {
-        let sv = UIScrollView()
-        sv.translatesAutoresizingMaskIntoConstraints = false
-        return sv
+    private let introLabel: UILabel = {
+        let label = UILabel()
+        label.setText("최저가 굿즈 찾기, 시작해볼까요?", style: .body1Medium, color: .textAssistive)
+        label.textAlignment = .left
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
     }()
-    
-    private let contentView: UIView = {
-        let cv = UIView()
-        cv.translatesAutoresizingMaskIntoConstraints = false
-        return cv
-    }()
-    
     
     private let headTitle: UILabel = {
         let label = UILabel()
@@ -33,6 +28,21 @@ final class SurveyStepOneView: UIView {
         label.textAlignment = .left
         label.numberOfLines = 0
         label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private let captionLabel: UILabel = {
+        let label = UILabel()
+        label.setText("최대 5개 선택 가능", style: .label1Medium22, color: .textAssistive)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private let errorLabel: UILabel = {
+        let label = UILabel()
+        label.setText("오류 메세지", style: .body2Medium, color: .warning)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.isHidden = true
         return label
     }()
     
@@ -45,7 +55,7 @@ final class SurveyStepOneView: UIView {
         cv.register(TagCell.self, forCellWithReuseIdentifier: TagCell.identifier)
         cv.backgroundColor = .clear
         cv.translatesAutoresizingMaskIntoConstraints = false
-        cv.isScrollEnabled = false
+        cv.isScrollEnabled = true
         return cv
     }()
     
@@ -92,15 +102,12 @@ private extension SurveyStepOneView {
     
     func setHierarchy() {
         addSubviews(
-            scrollView,
-            twoButton
-        )
-        
-        scrollView.addSubview(contentView)
-        
-        contentView.addSubviews(
+            introLabel,
             headTitle,
-            tagCollectionView
+            captionLabel,
+            errorLabel,
+            tagCollectionView,
+            twoButton
         )
     }
 
@@ -111,32 +118,27 @@ private extension SurveyStepOneView {
     func setConstraints() {
         NSLayoutConstraint.activate([
             
-            // 스크롤뷰
-            scrollView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
-            scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: twoButton.topAnchor, constant: -16),
+            // 인트로
+            introLabel.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 44),
+            introLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             
-            // 콘텐츠 뷰
-            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
-            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
-            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
-            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
-            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
+            // 타이틀
+            headTitle.topAnchor.constraint(equalTo: introLabel.bottomAnchor, constant: 16),
+            headTitle.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             
-            headTitle.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 13),
-            headTitle.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            // 캡션
+            captionLabel.topAnchor.constraint(equalTo: headTitle.bottomAnchor, constant: 4),
+            captionLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            
+            errorLabel.topAnchor.constraint(equalTo: captionLabel.bottomAnchor, constant: 16),
+            errorLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             
             // 컬렉션뷰
-            tagCollectionView.topAnchor.constraint(equalTo: headTitle.bottomAnchor, constant: 16),
-            tagCollectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            tagCollectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            tagCollectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
+            tagCollectionView.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 16),
+            tagCollectionView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            tagCollectionView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            tagCollectionView.bottomAnchor.constraint(equalTo: twoButton.topAnchor, constant: -25)
         ])
-        
-        // 컬렉션뷰 높이 자동 업데이트용 제약
-        collectionViewHeightConstraint = tagCollectionView.heightAnchor.constraint(equalToConstant: 0)
-        collectionViewHeightConstraint?.isActive = true
         
         // 버튼 (하단 고정)
         NSLayoutConstraint.activate([

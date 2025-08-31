@@ -8,9 +8,10 @@
 struct AnimationResponseDTO: Decodable {
     let code: Int
     let message: String
-    let data: DataClass
+    let validationErrors: String?
+    let data: AnimationListData
     
-    struct DataClass: Decodable {
+    struct AnimationListData: Decodable {
         let items: [AnimationItemDTO]
     }
 }

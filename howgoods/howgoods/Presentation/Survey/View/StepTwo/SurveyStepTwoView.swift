@@ -34,10 +34,26 @@ final class SurveyStepTwoView: UIView {
         return label
     }()
     
-    private let nextButton: SolidButton = {
-        let button = SolidButton(frame: .zero, title: "다음", color: .primary)
+    private let captionLabel: UILabel = {
+        let label = UILabel()
+        label.setText("최대 5개 선택 가능", style: .label1Medium22, color: .textAssistive)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private let errorLabel: UILabel = {
+        let label = UILabel()
+        label.setText("오류 메세지", style: .body2Medium, color: .warning)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.isHidden = true
+        return label
+    }()
+    
+    private let nextButton: OneButton = {
+        let button = OneButton(frame: .zero, title: "다음(0/5)", color: .primary, disabledColor: .bgDelete)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.accessibilityLabel = "다음"
+        button.isEnabled = false
         return button
     }()
     
@@ -100,6 +116,14 @@ final class SurveyStepTwoView: UIView {
 
         return section
     }
+    
+    func updateNextButtonTitle(count: Int) {
+        nextButton.updateTitle("다음(\(count)/5)")
+    }
+    
+    func setNextButtonEnabled(_ enabled: Bool) {
+        nextButton.isEnabled = enabled
+    }
 }
 
 // MARK: - Private Methods
@@ -115,6 +139,8 @@ private extension SurveyStepTwoView {
             navigationBar,
             requiredLabel,
             headTitle,
+            captionLabel,
+            errorLabel,
             tagCollectionView,
             nextButton
         )
@@ -130,18 +156,23 @@ private extension SurveyStepTwoView {
             navigationBar.leadingAnchor.constraint(equalTo: leadingAnchor),
             navigationBar.trailingAnchor.constraint(equalTo: trailingAnchor),
             
-            // 라벨 + 타이틀 + 캡션
-            requiredLabel.topAnchor.constraint(equalTo: navigationBar.bottomAnchor, constant: 16),
+            requiredLabel.topAnchor.constraint(equalTo: navigationBar.bottomAnchor, constant: 14),
             requiredLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             
-            headTitle.topAnchor.constraint(equalTo: requiredLabel.bottomAnchor, constant: 16),
+            headTitle.topAnchor.constraint(equalTo: requiredLabel.bottomAnchor, constant: 7),
             headTitle.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             
+            captionLabel.topAnchor.constraint(equalTo: headTitle.bottomAnchor, constant: 4),
+            captionLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            
+            errorLabel.topAnchor.constraint(equalTo: captionLabel.bottomAnchor, constant: 16),
+            errorLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            
             // tagCollectionView Constraints
-            tagCollectionView.topAnchor.constraint(equalTo: headTitle.bottomAnchor, constant: 16),
+            tagCollectionView.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 8),
             tagCollectionView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             tagCollectionView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            tagCollectionView.bottomAnchor.constraint(equalTo: nextButton.topAnchor, constant: -16),
+            tagCollectionView.bottomAnchor.constraint(equalTo: nextButton.topAnchor, constant: -8),
         ])
         
         // 버튼 (하단 고정)

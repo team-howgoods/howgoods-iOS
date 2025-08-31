@@ -26,31 +26,45 @@ final class SurveyStepThreeView: UIView {
 
     private let headTitle: UILabel = {
         let label = UILabel()
-        label.setText("거의 다 왔어요!\n소장하고 싶은 굿즈 형태를 골라주세요", style: .headlineSemibold, color: .textDefault)
+        label.setText("거의 다 왔어요!\n소장하고 싶은 굿즈 형태를 골라주세요",
+                      style: .headlineSemibold,
+                      color: .textDefault)
         label.numberOfLines = 0
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
+    
+    private let errorLabel: UILabel = {
+        let label = UILabel()
+        label.setText("오류 메세지", style: .body2Medium, color: .warning)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.isHidden = true
+        return label
+    }()
 
-    private let nextButton: SolidButton = {
-        let button = SolidButton(frame: .zero, title: "다음", color: .primary)
+    private let nextButton: OneButton = {
+        let button = OneButton(frame: .zero,
+                               title: "다음",
+                               color: .primary,
+                               disabledColor: .bgDelete)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.accessibilityLabel = "다음"
-        button.isEnabled = true
+        button.isEnabled = false
         return button
     }()
 
-    // 세로 스크롤 그리드
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewCompositionalLayout { [weak self] _, _ in
             return self?.createGoodsTypeSection()
         }
         let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.translatesAutoresizingMaskIntoConstraints = false
-        cv.alwaysBounceVertical = true       // 세로 스크롤
+        cv.alwaysBounceVertical = true
         cv.showsVerticalScrollIndicator = true
-        cv.register(SelectAllCell.self, forCellWithReuseIdentifier: SelectAllCell.identifier)
-        cv.register(GoodsTypeCell.self, forCellWithReuseIdentifier: GoodsTypeCell.identifier)
+        cv.register(SelectAllCell.self,
+                    forCellWithReuseIdentifier: SelectAllCell.identifier)
+        cv.register(GoodsTypeCell.self,
+                    forCellWithReuseIdentifier: GoodsTypeCell.identifier)
         cv.allowsMultipleSelection = true
         return cv
     }()
@@ -69,21 +83,18 @@ final class SurveyStepThreeView: UIView {
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    // MARK: - 레이아웃: 세로 그리드(3열), 가로 스크롤 없음
+    // MARK: - Public Methods
     func createGoodsTypeSection() -> NSCollectionLayoutSection {
         let item = NSCollectionLayoutItem(
             layoutSize: .init(widthDimension: .absolute(108),
                               heightDimension: .absolute(108))
         )
-        // 필요시 인셋 유지
-        item.contentInsets = .init(top: 0, leading: 0, bottom: 0, trailing: 0)
 
         let groupSize = NSCollectionLayoutSize(
             widthDimension: .fractionalWidth(1.0),
             heightDimension: .absolute(108)
         )
 
-        // iOS16+는 repeatingSubitem 사용, 그 이하는 기존 API
         let group: NSCollectionLayoutGroup
         if #available(iOS 16.0, *) {
             group = NSCollectionLayoutGroup.horizontal(
@@ -103,17 +114,38 @@ final class SurveyStepThreeView: UIView {
         let section = NSCollectionLayoutSection(group: group)
         section.orthogonalScrollingBehavior = .none
         section.interGroupSpacing = 28
-        section.contentInsets = .init(top: 0, leading: 16, bottom: 0, trailing: 16)
         return section
     }
 
+    func setNextButtonEnabled(_ enabled: Bool) {
+        nextButton.isEnabled = enabled
+    }
 }
 
+// MARK: - Private Methods
 private extension SurveyStepThreeView {
     func configure() {
-        backgroundColor = .white
-        addSubviews(navigationBar, requiredLabel, headTitle, collectionView, nextButton)
+        setHierarchy()
+        setStyles()
+        setConstraints()
+    }
 
+    func setHierarchy() {
+        addSubviews(
+            navigationBar,
+            requiredLabel,
+            headTitle,
+            errorLabel,
+            collectionView,
+            nextButton
+        )
+    }
+
+    func setStyles() {
+        backgroundColor = .white
+    }
+
+    func setConstraints() {
         NSLayoutConstraint.activate([
             navigationBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
             navigationBar.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -125,11 +157,14 @@ private extension SurveyStepThreeView {
             headTitle.topAnchor.constraint(equalTo: requiredLabel.bottomAnchor, constant: 16),
             headTitle.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             headTitle.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -16),
+            
+            errorLabel.topAnchor.constraint(equalTo: headTitle.bottomAnchor, constant: 16),
+            errorLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
 
-            collectionView.topAnchor.constraint(equalTo: headTitle.bottomAnchor, constant: 50),
-            collectionView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: nextButton.topAnchor, constant: -16),
+            collectionView.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 14),
+            collectionView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            collectionView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            collectionView.bottomAnchor.constraint(equalTo: nextButton.topAnchor, constant: -8),
 
             nextButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             nextButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
