@@ -62,6 +62,7 @@ private extension SurveyViewController {
             .sink {
                 print("지금 시작하기 클릭")
                 self.didTapStart?()
+                self.viewModel.loadAnimations()
             }
             .store(in: &cancellables)
         
