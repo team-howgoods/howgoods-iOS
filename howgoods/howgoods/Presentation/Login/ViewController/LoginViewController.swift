@@ -57,6 +57,10 @@ final class LoginViewController: UIViewController {
         super.viewDidLoad()
         configure()
     }
+    
+    /// Coordinator에서 구독할 수 있는 콜백
+    var onLoginSuccess: (() -> Void)?
+    var onLoginFailure: ((Error) -> Void)?
 }
 
 // MARK: - UI Methods
@@ -125,13 +129,16 @@ private extension LoginViewController {
             .sink { result in
                 switch result {
                 case .success(let token):
-                    print("로그인 성공: \(token)")
+                    print("로그인 성공: \(token.accessToken)")
+                    TokenStorage.save(token: token, loginType: .kakao)
+                    self.onLoginSuccess?()
                     // TODO: 성공 후 화면 전환 또는 토큰 저장 로직 추가
                 case .failure(let error):
-                    print("로그인 실패: \(error.localizedDescription)")
+                    self.onLoginFailure?(error)
                     // TODO: 실패 시 Alert 표시
                 }
             }
             .store(in: &cancellables)
+        
     }
 }

@@ -50,7 +50,7 @@ final class KakaoAuthService {
     ///   - `AnyPublisher<Result<String, Error>, Never>`:
     ///     - `.success(String)`: 서버 인증 성공 시 발급된 최종 액세스 토큰
     ///     - `.failure(Error)`: 인증 실패 시 에러 정보
-    func authorizeWithKakao() -> AnyPublisher<Result<String, Error>, Never> {
+    func authorizeWithKakao() -> AnyPublisher<Result<AuthToken, Error>, Never> {
         Future { [weak self] promise in
             guard let self = self else { return }
 
@@ -66,7 +66,7 @@ final class KakaoAuthService {
                                 .map { result in
                                     switch result {
                                     case .success(let authToken):
-                                        return .success(authToken.accessToken)
+                                        return .success(authToken)
                                     case .failure(let err):
                                         return .failure(err)
                                     }
@@ -85,7 +85,7 @@ final class KakaoAuthService {
                                 .map { result in
                                     switch result {
                                     case .success(let authToken):
-                                        return .success(authToken.accessToken)
+                                        return .success(authToken)
                                     case .failure(let err):
                                         return .failure(err)
                                     }

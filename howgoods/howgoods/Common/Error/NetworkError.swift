@@ -31,5 +31,7 @@ enum NetworkError: Error {
     /// 알 수 없는 에러
     /// - 예: 위 케이스로 분류할 수 없는 모든 기타 오류
     case unknown
+    
+    case tokenExpired
 }
 

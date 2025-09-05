@@ -13,7 +13,7 @@
 struct AuthTokenDTO: Decodable {
     
     /// 로그인된 회원의 이메일 주소
-    let memberEmail: String
+    let nickname: String?
     
     /// 액세스 토큰
     /// - 보호된 API 요청 시 인증 헤더(`Authorization: Bearer <token>`)에 포함
@@ -28,7 +28,6 @@ struct AuthTokenDTO: Decodable {
     /// - Returns: `AuthToken` 도메인 모델 인스턴스
     func toDomain() -> AuthToken {
         return AuthToken(
-            memberEmail: memberEmail,
             accessToken: accessToken,
             refreshToken: refreshToken
         )

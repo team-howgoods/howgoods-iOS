@@ -21,5 +21,5 @@ protocol LoginUseCaseProtocol {
     ///   - `AnyPublisher<Result<String, Error>, Never>`
     ///     - `.success(String)`: 로그인 성공 시 토큰 반환
     ///     - `.failure(Error)`: 로그인 실패 시 에러 반환
-    func execute(type: LoginType) -> AnyPublisher<Result<String, Error>, Never>
+    func execute(type: LoginType) -> AnyPublisher<Result<AuthToken, Error>, Never>
 }

@@ -21,6 +21,8 @@ enum AuthRouter: URLRequestConvertible {
     case loginWithNaver(code: String)
     /// Kakao 로그인 요청
     case loginWithKakao(code: String)
+    
+    case refreshToken(refreshToken: String)
 
     // MARK: - HTTP Method
     
@@ -38,6 +40,8 @@ enum AuthRouter: URLRequestConvertible {
             return "api/auth/naver/callback"
         case .loginWithKakao:
             return "api/auth/kakao/callback"
+        case .refreshToken:
+            return "api/auth/refresh"
         }
     }
 
@@ -62,9 +66,13 @@ enum AuthRouter: URLRequestConvertible {
              .loginWithKakao(let code):
             let dto = LoginRequestDTO(code: code)
             request.httpBody = try JSONEncoder().encode(dto)
+            
+        case .refreshToken(let refreshToken):
+            let dto = RefreshRequestDTO(refreshToken: refreshToken)
+            request.httpBody = try JSONEncoder().encode(dto)
         }
-
         return request
     }
 }
+
 
