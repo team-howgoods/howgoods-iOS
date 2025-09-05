@@ -20,7 +20,7 @@ protocol AuthRepositoryProtocol {
     ///   - `AnyPublisher<Result<String, Error>, Never>`:
     ///     - `.success(String)`: 로그인 성공 시 토큰 반환
     ///     - `.failure(Error)`: 로그인 실패 시 에러 반환
-    func loginWithApple() -> AnyPublisher<Result<String, Error>, Never>
+    func loginWithApple() -> AnyPublisher<Result<AuthToken, Error>, Never>
     
     /// Naver 로그인 실행
     ///
@@ -28,7 +28,7 @@ protocol AuthRepositoryProtocol {
     ///   - `AnyPublisher<Result<String, Error>, Never>`:
     ///     - `.success(String)`: 로그인 성공 시 토큰 반환
     ///     - `.failure(Error)`: 로그인 실패 시 에러 반환
-    func loginWithNaver() -> AnyPublisher<Result<String, Error>, Never>
+    func loginWithNaver() -> AnyPublisher<Result<AuthToken, Error>, Never>
     
     /// Kakao 로그인 실행
     ///
@@ -36,7 +36,7 @@ protocol AuthRepositoryProtocol {
     ///   - `AnyPublisher<Result<String, Error>, Never>`:
     ///     - `.success(String)`: 로그인 성공 시 토큰 반환
     ///     - `.failure(Error)`: 로그인 실패 시 에러 반환
-    func loginWithKakao() -> AnyPublisher<Result<String, Error>, Never>
+    func loginWithKakao() -> AnyPublisher<Result<AuthToken, Error>, Never>
     
     /// 인증 코드 서버 전송
     ///
@@ -45,5 +45,8 @@ protocol AuthRepositoryProtocol {
     ///   - `AnyPublisher<Result<String, Error>, Never>`:
     ///     - `.success(String)`: 서버에서 처리 성공 시 응답 데이터 반환
     ///     - `.failure(Error)`: 처리 실패 시 에러 반환
-    func sendCodeToServer(code: String) -> AnyPublisher<Result<String, Error>, Never>
+    func sendCodeToServer(code: String, type: LoginType) -> AnyPublisher<Result<AuthToken, Error>, Never>
+    
+    func refreshToken(_ refreshToken: String) -> AnyPublisher<Result<AuthToken, Error>, Never>
+    
 }

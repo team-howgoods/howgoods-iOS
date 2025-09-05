@@ -50,17 +50,17 @@ final class AuthRepository: AuthRepositoryProtocol {
     
     /// Apple 로그인 실행
     /// - Returns: 로그인 성공 시 토큰 문자열, 실패 시 에러를 포함한 퍼블리셔
-    func loginWithApple() -> AnyPublisher<Result<String, Error>, Never> {
+    func loginWithApple() -> AnyPublisher<Result<AuthToken, Error>, Never> {
         appleAuthService.authorizeWithApple()
     }
 
     /// Naver 로그인 실행
-    func loginWithNaver() -> AnyPublisher<Result<String, Error>, Never> {
+    func loginWithNaver() -> AnyPublisher<Result<AuthToken, Error>, Never> {
         naverAuthService.authorizeWithNaver()
     }
 
     /// Kakao 로그인 실행
-    func loginWithKakao() -> AnyPublisher<Result<String, Error>, Never> {
+    func loginWithKakao() -> AnyPublisher<Result<AuthToken, Error>, Never> {
         kakaoAuthService.authorizeWithKakao()
     }
 
@@ -70,12 +70,39 @@ final class AuthRepository: AuthRepositoryProtocol {
     /// - Returns:
     ///   - `.success(String)`: 서버 인증 성공 시 발급받은 액세스 토큰
     ///   - `.failure(Error)`: 인증 실패 시 에러
-    func sendCodeToServer(code: String) -> AnyPublisher<Result<String, Error>, Never> {
-        authNetworkService.loginWithApple(code: code)
+    func sendCodeToServer(code: String, type: LoginType) -> AnyPublisher<Result<AuthToken, Error>, Never> {
+        let publisher: AnyPublisher<Result<AuthToken, NetworkError>, Never>
+        
+        switch type {
+        case .apple:
+            publisher = authNetworkService.loginWithApple(code: code)
+        case .kakao:
+            publisher = authNetworkService.loginWithKakao(code: code)
+        case .naver:
+            publisher = authNetworkService.loginWithNaver(code: code)
+        }
+        
+        return publisher
             .map { result in
                 switch result {
                 case .success(let token):
-                    return .success(token.accessToken)
+                    return .success(token)
+                case .failure(let error):
+                    return .failure(error)
+                }
+            }
+            .eraseToAnyPublisher()
+    }
+    
+    func refreshToken(_ refreshToken: String) -> AnyPublisher<Result<AuthToken, Error>, Never> {
+        authNetworkService.refreshToken(refreshToken)
+            .map { result in
+                switch result {
+                case .success(let token):
+                    if let loginType = TokenStorage.loadLoginType() {
+                        TokenStorage.save(token: token, loginType: loginType)
+                    }
+                    return .success(token)
                 case .failure(let error):
                     return .failure(error)
                 }
