@@ -4,6 +4,7 @@
 <dict>
 	<key>UIAppFonts</key>
 	<array>
+		<string>SUIT-Regular.otf</string>
 		<string>SUIT-SemiBold.otf</string>
 		<string>SUIT-Medium.otf</string>
 	</array>
@@ -62,5 +63,7 @@
 			</array>
 		</dict>
 	</dict>
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
 </dict>
 </plist>

@@ -9,7 +9,7 @@ import UIKit
 
 public enum AppFont {
     public enum Weight {
-        case medium, semibold
+        case medium, semibold, regular
     }
     
     /// 프로젝트 전역 폰트 이름
@@ -17,6 +17,7 @@ public enum AppFont {
         switch weight {
         case .medium:   return "SUIT-Medium"
         case .semibold: return "SUIT-SemiBold"
+        case .regular: return "SUIT-Regular"
         }
     }
     /// 필수: SUIT-Mediumr 로드 (없으면 시스템 폰트로 폴백)
@@ -30,6 +31,7 @@ public enum AppFont {
                 switch weight {
                 case .medium:   return .medium
                 case .semibold: return .semibold
+                case .regular: return .regular
                 }
             }()
             return .systemFont(ofSize: size, weight: sysWeight)
