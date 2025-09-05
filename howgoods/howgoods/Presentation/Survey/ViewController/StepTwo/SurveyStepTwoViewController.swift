@@ -26,7 +26,6 @@ final class SurveyStepTwoViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configure()
-        viewModel.loadCharacters()
     }
     
     // MARK: - Initializer
@@ -47,9 +46,13 @@ final class SurveyStepTwoViewController: UIViewController {
 // MARK: - UI Methods
 private extension SurveyStepTwoViewController {
     func configure() {
+        setStyles()
         setCollectionView()
         setActions()
         setBinding()
+    }
+    func setStyles() {
+        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = false
     }
     
     // MARK: - CollectionView 설정
@@ -73,6 +76,7 @@ private extension SurveyStepTwoViewController {
             .sink { [weak self] in
                 guard let self = self else { return }
                 print("다음 클릭, requestDTO:", self.viewModel.requestDTO)
+                self.viewModel.loadGoodsTypes()
                 self.didTapNext?()
             }
             .store(in: &cancellables)

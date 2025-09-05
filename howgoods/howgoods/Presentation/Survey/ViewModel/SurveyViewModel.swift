@@ -41,6 +41,7 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     private let animationsSubject = CurrentValueSubject<[Animation], Never>([])
     private let charactersSubject = CurrentValueSubject<[CharacterAnimation], Never>([])
     private let goodsTypesSubject = CurrentValueSubject<[GoodsType], Never>([])
+    private let goodsSubject = CurrentValueSubject<[GoodsItem], Never>([])
     
     private let selectedAnimationsSubject = CurrentValueSubject<[Int], Never>([])
     private let selectedCharactersSubject = CurrentValueSubject<[Int], Never>([])
@@ -60,6 +61,10 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     
     var goodsTypes: AnyPublisher<[GoodsType], Never> {
         goodsTypesSubject.eraseToAnyPublisher()
+    }
+    
+    var goods: AnyPublisher<[GoodsItem], Never> {
+        goodsSubject.eraseToAnyPublisher()
     }
     
     var selectedAnimations: AnyPublisher<[Int], Never> {
@@ -133,6 +138,19 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
         }
     }
     
+    func loadGoods() {
+        let animationIds = requestDTO.animationSurveyResults.map { $0.animationId }
+        let goodsTypeIds = requestDTO.goodsTypeSurveyResults.map { $0.goodsTypeId }
+        surveyUseCase.fetchGoods(animationIds: animationIds, goodsTypeIds: goodsTypeIds) { [weak self] result in
+            switch result {
+            case .success(let list):
+                self?.goodsSubject.send(list)
+            case .failure(let error):
+                print("굿즈 불러오기 실패:", error)
+            }
+        }
+    }
+    
     // MARK: - Input (단일 선택/해제)
     func select(step: SurveyStep, id: Int) {
         switch step {
@@ -154,7 +172,7 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
         case .goodsType:
             updateSelection(subject: selectedGoodsTypesSubject, id: id)
         case .goods:
-            updateSelection(subject: selectedGoodsSubject, id: id, max: 3)
+            updateSelection(subject: selectedGoodsSubject, id: id, max: 5)
         }
     }
     
@@ -174,15 +192,29 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     func reset(step: SurveyStep) {
         switch step {
         case .animation:
+            // 애니메이션 선택 초기화 + 목록도 초기화
             selectedAnimationsSubject.send([])
+            animationsSubject.send([])
+            charactersSubject.send([]) // 애니메이션 없으면 캐릭터도 무효화
+
         case .character:
+            // 캐릭터 선택 초기화 + 목록도 초기화
             selectedCharactersSubject.send([])
+            charactersSubject.send([])
+
         case .goodsType:
+            // 굿즈 타입 선택 초기화 + 목록도 초기화
             selectedGoodsTypesSubject.send([])
+            goodsTypesSubject.send([])
+            goodsSubject.send([]) // 굿즈 타입 없으면 굿즈도 무효화
+
         case .goods:
+            // 굿즈 선택 초기화 + 목록도 초기화
             selectedGoodsSubject.send([])
+            goodsSubject.send([])
         }
     }
+
     
     // MARK: - 전체 선택/해제 (goodsType 전용) — 선택 제한 무시
     /// 전달된 모든 goodsType id를 한 번에 선택 (중복 제거)

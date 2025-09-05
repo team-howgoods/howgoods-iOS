@@ -55,17 +55,21 @@ final class SurveyStepThreeViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configure()
-        viewModel.loadGoodsTypes()
     }
 }
 
 private extension SurveyStepThreeViewController {
     func configure() {
         setCollectionView()
+        setStyles()
         setActions()
         setBinding()
     }
 
+    func setStyles() {
+        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = false
+    }
+    
     func setCollectionView() {
         // 세로 스크롤 그리드(레이아웃은 View가 제공)
         let layout = UICollectionViewCompositionalLayout { [weak self] _, _ in
@@ -83,6 +87,7 @@ private extension SurveyStepThreeViewController {
             .sink { [weak self] in
                 guard let self else { return }
                 print("다음 클릭, requestDTO:", self.viewModel.requestDTO)
+                viewModel.loadGoods()
                 self.didTapNext?()
             }
             .store(in: &cancellables)

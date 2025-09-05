@@ -51,7 +51,10 @@ final class GoodsTypeCell: UICollectionViewCell {
 
 private extension GoodsTypeCell {
     func configure() {
-        contentView.addSubviews(imageView, nameLabel)
+        contentView.addSubviews(
+            imageView,
+            nameLabel
+        )
         backgroundColor = .clear
         layer.cornerRadius = 8
         layer.masksToBounds = true
