@@ -25,7 +25,7 @@ protocol LoginViewModelOutput {
     /// 로그인 요청 결과 스트림
     /// - 성공: 로그인 토큰(String)
     /// - 실패: Error
-    var loginResult: AnyPublisher<Result<String, Error>, Never> { get }
+    var loginResult: AnyPublisher<Result<AuthToken, Error>, Never> { get }
 }
 
 /// 로그인 화면의 ViewModel
@@ -42,9 +42,9 @@ final class LoginViewModel: LoginViewModelInput, LoginViewModelOutput {
 
     // MARK: - Output
     /// 내부에서 로그인 결과를 저장하는 Subject
-    private let loginResultSubject = PassthroughSubject<Result<String, Error>, Never>()
+    private let loginResultSubject = PassthroughSubject<Result<AuthToken, Error>, Never>()
     /// 외부에서 구독 가능한 로그인 결과 스트림
-    var loginResult: AnyPublisher<Result<String, Error>, Never> {
+    var loginResult: AnyPublisher<Result<AuthToken, Error>, Never> {
         loginResultSubject.eraseToAnyPublisher()
     }
 

@@ -55,7 +55,27 @@ final class SurveyCoordinator: Coordinator {
     
     private func showStepThree() {
         let stepThreeVC = SurveyStepThreeViewController(viewModel: viewModel)
+        
+        stepThreeVC.didTapNext = { [weak self] in
+            self?.showStepFour()
+        }
+        
         navigationController.pushViewController(stepThreeVC, animated: true)
+    }
+    
+    private func showStepFour() {
+        let stepFourVC = SurveyStepFourViewController(viewModel: viewModel)
+        
+        stepFourVC.didTapSearch = { [weak self] in
+            self?.showSearchView()
+        }
+        
+        navigationController.pushViewController(stepFourVC, animated: true)
+    }
+    
+    private func showSearchView() {
+        let searchVC = SearchViewController(viewModel: viewModel)
+        navigationController.pushViewController(searchVC, animated: true)
     }
     
     private func showNoPreference() {

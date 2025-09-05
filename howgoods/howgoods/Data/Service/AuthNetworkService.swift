@@ -51,6 +51,11 @@ final class AuthNetworkService: AuthNetworkServiceProtocol {
         return sendRequest(router: AuthRouter.loginWithKakao(code: code))
     }
     
+    func refreshToken(_ refreshToken: String) -> AnyPublisher<Result<AuthToken, NetworkError>, Never> {
+        print("Refresh 호출, refreshToken:", refreshToken)
+        return sendRequest(router: AuthRouter.refreshToken(refreshToken: refreshToken))
+    }
+    
     // MARK: - Private Methods
     
     /// 공통 네트워크 요청 처리 메서드
@@ -87,7 +92,8 @@ final class AuthNetworkService: AuthNetworkServiceProtocol {
                             return
                         }
                         // DTO → Domain 변환 후 반환
-                        promise(.success(.success(tokenDTO.toDomain())))
+                        let token = tokenDTO.toDomain()
+                        promise(.success(.success(token)))
                         
                     case .failure(let afError):
                         // HTTP 상태 코드 기반 에러 처리
