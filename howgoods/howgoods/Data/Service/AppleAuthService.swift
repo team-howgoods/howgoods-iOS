@@ -49,7 +49,7 @@ final class AppleAuthService: NSObject {
     ///   - `AnyPublisher<Result<String, Error>, Never>`:
     ///     - `.success(String)`: 최종 액세스 토큰
     ///     - `.failure(Error)`: 인증 실패 에러
-    func authorizeWithApple() -> AnyPublisher<Result<String, Error>, Never> {
+    func authorizeWithApple() -> AnyPublisher<Result<AuthToken, Error>, Never> {
         Future { [weak self] promise in
             // Apple 인증 결과를 처리할 콜백 저장
             self?.promise = { result in
@@ -60,7 +60,7 @@ final class AppleAuthService: NSObject {
                         .map { result in
                             switch result {
                             case .success(let authToken):
-                                return .success(authToken.accessToken)
+                                return .success(authToken)
                             case .failure(let err):
                                 return .failure(err)
                             }
