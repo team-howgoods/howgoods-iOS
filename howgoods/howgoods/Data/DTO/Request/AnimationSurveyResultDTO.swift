@@ -6,5 +6,5 @@
 //
 
 struct AnimationSurveyResultDTO: Encodable {
-    let animationId: Int
+    let animationId: Int?
 }

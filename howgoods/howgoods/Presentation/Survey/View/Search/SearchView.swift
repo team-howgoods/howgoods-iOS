@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Combine
 
 final class SearchView: UIView {
     // MARK: - Properties
@@ -15,6 +16,18 @@ final class SearchView: UIView {
         let v = CustomNavigationBar()
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
+    }()
+    
+    // TODO: 임시
+    private let emptyLabel: UILabel = {
+        let label = UILabel()
+        label.setText("검색 결과가 없습니다",
+                      style: .body1Semibold,
+                      color: .gray600)
+        label.textAlignment = .center
+        label.isHidden = true // 기본은 숨김
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
     }()
     
     private let headTitle: UILabel = {
@@ -33,6 +46,23 @@ final class SearchView: UIView {
         bar.translatesAutoresizingMaskIntoConstraints = false
         return bar
     }()
+    
+    private lazy var collectionView: UICollectionView = {
+        let layout = createLayout()
+        let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        cv.translatesAutoresizingMaskIntoConstraints = false
+        cv.register(GoodsCell.self, forCellWithReuseIdentifier: GoodsCell.identifier)
+        cv.allowsMultipleSelection = true
+        cv.backgroundColor = .white
+        return cv
+    }()
+    
+    private let confirmButton: OneButton = {
+        let button = OneButton(frame: .zero, title: "완료", color: .primary, disabledColor: .bgDelete)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+    
     // MARK: - Initializer
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -48,6 +78,43 @@ final class SearchView: UIView {
     // MARK: - Public Methods
     var getNavigationBar: CustomNavigationBar {
         navigationBar
+    }
+    var getCollectionView: UICollectionView { collectionView }
+    var getSearchBar: SearchBar { searchBar }
+    var getEmptyLabel: UILabel { emptyLabel }
+    
+    var confirmButtonPublisher: AnyPublisher<Void, Never> {
+        confirmButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
+    }
+    
+    func createLayout() -> UICollectionViewCompositionalLayout {
+        let interItemSpacing: CGFloat = 8
+        let itemsPerRow: CGFloat = 2
+        let itemHeightExtra: CGFloat = 48
+        
+        return UICollectionViewCompositionalLayout { _, environment in
+            let availableWidth = environment.container.effectiveContentSize.width
+            - (itemsPerRow - 1) * interItemSpacing
+            let itemWidth = availableWidth / itemsPerRow
+            let itemHeight = itemWidth + itemHeightExtra
+            
+            let itemSize = NSCollectionLayoutSize(
+                widthDimension: .absolute(itemWidth),
+                heightDimension: .absolute(itemHeight)
+            )
+            let item = NSCollectionLayoutItem(layoutSize: itemSize)
+            
+            let groupSize = NSCollectionLayoutSize(
+                widthDimension: .fractionalWidth(1.0),
+                heightDimension: .absolute(itemHeight)
+            )
+            let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item, item])
+            group.interItemSpacing = .fixed(interItemSpacing)
+            
+            let section = NSCollectionLayoutSection(group: group)
+            section.interGroupSpacing = 12
+            return section
+        }
     }
 }
 
@@ -65,7 +132,10 @@ private extension SearchView {
         addSubviews(
             navigationBar,
             headTitle,
-            searchBar
+            searchBar,
+            collectionView,
+            emptyLabel,
+            confirmButton
         )
     }
     
@@ -86,7 +156,20 @@ private extension SearchView {
         
         searchBar.topAnchor.constraint(equalTo: headTitle.bottomAnchor, constant: 16),
         searchBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-        searchBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16)
+        searchBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+        
+        collectionView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 16),
+        collectionView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+        collectionView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+        collectionView.bottomAnchor.constraint(equalTo: confirmButton.bottomAnchor, constant: -12),
+        
+        emptyLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
+        emptyLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+        
+        confirmButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+        confirmButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+        confirmButton.heightAnchor.constraint(equalToConstant: 52),
+        confirmButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -11)
         ])
     }
     

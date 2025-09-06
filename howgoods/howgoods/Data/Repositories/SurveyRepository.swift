@@ -79,6 +79,41 @@ final class SurveyRepository: SurveyRepositoryProtocol {
                 }
             }
     }
-
-
+    
+    func searchGoods(keyword: String, completion: @escaping (Result<[GoodsItem], Error>) -> Void) {
+        session.request(SurveyRouter.searchGoods(keyword))
+            .validate()
+            .responseDecodable(of: SearchGoodsResponseDTO.self) { response in
+                switch response.result {
+                case .success(let dto):
+                    completion(.success(dto.data.items.map { $0.toDomain() }))
+                case .failure(let error):
+                    if let data = response.data,
+                       let rawString = String(data: data, encoding: .utf8) {
+                        print("searchGoods 실패, raw response:", rawString)
+                    }
+                    completion(.failure(error))
+                }
+            }
+    }
+    
+    func submitSurvey(
+        requestDTO: SubmitSurveyRequestDTO,
+        completion: @escaping (Result<SubmitSurveyResponseDTO, Error>) -> Void
+    ) {
+        session.request(SurveyRouter.submitSurvey(requestDTO))
+            .validate()
+            .responseDecodable(of: SubmitSurveyResponseDTO.self) { response in
+                switch response.result {
+                case .success(let dto):
+                    completion(.success(dto))
+                case .failure(let error):
+                    if let data = response.data,
+                       let rawString = String(data: data, encoding: .utf8) {
+                        print("submitSurvey 실패, raw response:", rawString)
+                    }
+                    completion(.failure(error))
+                }
+            }
+    }
 }

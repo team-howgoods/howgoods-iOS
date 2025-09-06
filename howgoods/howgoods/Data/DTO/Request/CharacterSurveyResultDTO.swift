@@ -6,5 +6,5 @@
 //
 
 struct CharacterSurveyResultDTO: Encodable {
-    let characterId: Int
+    let characterId: Int?
 }

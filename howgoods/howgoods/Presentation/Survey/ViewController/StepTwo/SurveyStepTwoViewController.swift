@@ -75,7 +75,7 @@ private extension SurveyStepTwoViewController {
         surveyStepTwoView.nextButtonPublisher
             .sink { [weak self] in
                 guard let self = self else { return }
-                print("다음 클릭, requestDTO:", self.viewModel.requestDTO)
+                print("다음 클릭")
                 self.viewModel.loadGoodsTypes()
                 self.didTapNext?()
             }

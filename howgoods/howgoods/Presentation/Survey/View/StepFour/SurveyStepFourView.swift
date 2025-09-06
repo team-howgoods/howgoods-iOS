@@ -47,7 +47,7 @@ final class SurveyStepFourView: UIView {
             guard let self else { return nil }
             
             if self.hasSelection && sectionIndex == 0 {
-                // 선택된 굿즈 섹션
+                // 선택된 굿즈 섹션 → header/footer 없음
                 let itemSize = NSCollectionLayoutSize(
                     widthDimension: .absolute(88),
                     heightDimension: .absolute(88)
@@ -59,6 +59,7 @@ final class SurveyStepFourView: UIView {
                 section.orthogonalScrollingBehavior = .continuous
                 section.interGroupSpacing = 4
                 section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16)
+                section.boundarySupplementaryItems = []   // header/footer 제거
                 return section
             } else {
                 // 일반 굿즈 섹션
@@ -143,7 +144,7 @@ final class SurveyStepFourView: UIView {
     var searchBarTapPublisher: AnyPublisher<Void, Never> {
         searchBar.didTapSearchBar
     }
-    
+    var getTwoButton: TwoButtonBar { twoButton }
     var getNavigationBar: CustomNavigationBar { navigationBar }
     var getCollectionView: UICollectionView { collectionView }
 }

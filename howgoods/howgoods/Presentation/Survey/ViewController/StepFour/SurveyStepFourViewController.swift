@@ -18,8 +18,9 @@ final class SurveyStepFourViewController: UIViewController {
     private var expandedSections: [Int: Int] = [:]
     
     private var hasSelection: Bool {
-        !viewModel.requestDTO.goodsSurveyResults.isEmpty
+        !viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }.isEmpty
     }
+
     
     // MARK: - Lifecycle
     override func loadView() { self.view = surveyStepFourView }
@@ -37,6 +38,8 @@ final class SurveyStepFourViewController: UIViewController {
     
     required init?(coder: NSCoder) { fatalError() }
     
+    // Coordinator에서 주입할 이벤트 클로저
+    var didTapHome: (() -> Void)?
     var didTapSearch: (() -> Void)?
 }
 
@@ -83,8 +86,39 @@ private extension SurveyStepFourViewController {
         
         surveyStepFourView.getNavigationBar.backButtonPublisher
             .sink { [weak self] in
-                self?.viewModel.reset(step: .character)
+                self?.viewModel.reset(step: .goodsType)
                 self?.navigationController?.popViewController(animated: true)
+            }
+            .store(in: &cancellables)
+        
+        surveyStepFourView.getTwoButton.primaryTapPublisher
+            .sink {
+                print("완료 클릭, requestDTO:", self.viewModel.requestDTO)
+                self.viewModel.submitSurvey { result in
+                    switch result {
+                    case .success(let response):
+                        print("서버 응답:", response)
+                        self.didTapHome?()
+                    case .failure(let error):
+                        print("제출 실패:", error)
+                    }
+                }
+            }
+            .store(in: &cancellables)
+        
+        surveyStepFourView.getTwoButton.skipButtonTapPublisher
+            .sink {
+                print("다음에 할께요 클릭")
+                self.viewModel.reset(step: .goods)
+                self.viewModel.submitSurvey { result in
+                    switch result {
+                    case .success(let response):
+                        print("서버 응답:", response)
+                        self.didTapHome?()
+                    case .failure(let error):
+                        print("제출 실패:", error)
+                    }
+                }
             }
             .store(in: &cancellables)
     }
@@ -139,7 +173,7 @@ extension SurveyStepFourViewController: UICollectionViewDataSource, UICollection
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         if hasSelection && section == 0 {
-            return viewModel.requestDTO.goodsSurveyResults.count
+            return viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }.count
         } else {
             let groupIndex = adjustedGroupIndex(for: section)
             let total = groupedGoods[groupIndex].items.count
@@ -155,7 +189,7 @@ extension SurveyStepFourViewController: UICollectionViewDataSource, UICollection
                 for: indexPath
             ) as! SelectedGoodsCell
             
-            let selectedIds = viewModel.requestDTO.goodsSurveyResults.map { $0.goodsId }
+            let selectedIds = viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }
             guard indexPath.item < selectedIds.count else { return cell }
             
             let id = selectedIds[indexPath.item]
@@ -180,7 +214,7 @@ extension SurveyStepFourViewController: UICollectionViewDataSource, UICollection
             ) as! GoodsCell
             cell.configure(with: item)
             
-            let selectedIds = viewModel.requestDTO.goodsSurveyResults.map { $0.goodsId }
+            let selectedIds = viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }
             if let order = selectedIds.firstIndex(of: item.id) {
                 cell.updateSelectionOrder(order + 1)
             } else {
@@ -195,7 +229,7 @@ extension SurveyStepFourViewController: UICollectionViewDataSource, UICollection
         let groupIndex = adjustedGroupIndex(for: indexPath.section)
         let item = groupedGoods[groupIndex].items[indexPath.item]
         
-        let selectedIds = viewModel.requestDTO.goodsSurveyResults.map { $0.goodsId }
+        let selectedIds = viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }
         
         if selectedIds.contains(item.id) {
             // 이미 선택됨 → 해제
@@ -221,13 +255,26 @@ extension SurveyStepFourViewController: UICollectionViewDataSource, UICollection
     func collectionView(_ collectionView: UICollectionView,
                         viewForSupplementaryElementOfKind kind: String,
                         at indexPath: IndexPath) -> UICollectionReusableView {
-        // 선택된 굿즈 섹션(0번)이 있을 때만 헤더/푸터 제거
-        if hasSelection && indexPath.section == 0 {
-            return UICollectionReusableView()
-        }
-        
+
         let groupIndex = adjustedGroupIndex(for: indexPath.section)
-        
+
+        // groupIndex 가 유효하지 않으면: "빈 footer/header"라도 dequeue 해서 반환
+        guard groupIndex >= 0, groupIndex < groupedGoods.count else {
+            if kind == UICollectionView.elementKindSectionHeader {
+                return collectionView.dequeueReusableSupplementaryView(
+                    ofKind: kind,
+                    withReuseIdentifier: GoodsSectionHeader.identifier,
+                    for: indexPath
+                )
+            } else {
+                return collectionView.dequeueReusableSupplementaryView(
+                    ofKind: kind,
+                    withReuseIdentifier: GoodsFooterView.identifier,
+                    for: indexPath
+                )
+            }
+        }
+
         if kind == UICollectionView.elementKindSectionHeader {
             let header = collectionView.dequeueReusableSupplementaryView(
                 ofKind: kind,
@@ -242,7 +289,7 @@ extension SurveyStepFourViewController: UICollectionViewDataSource, UICollection
                 withReuseIdentifier: GoodsFooterView.identifier,
                 for: indexPath
             ) as! GoodsFooterView
-            
+
             let total = groupedGoods[groupIndex].items.count
             if total <= 4 {
                 footer.isHidden = true
@@ -251,13 +298,13 @@ extension SurveyStepFourViewController: UICollectionViewDataSource, UICollection
             footer.isHidden = false
             let current = expandedSections[groupIndex] ?? min(4, total)
             footer.update(isExpanded: current >= total)
-            
+
             footer.moreButtonPublisher
                 .sink { [weak self] in
                     self?.toggleSection(indexPath.section)
                 }
                 .store(in: &cancellables)
-            
+
             return footer
         }
     }

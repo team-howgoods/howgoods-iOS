@@ -31,9 +31,11 @@ final class SurveyStepThreeViewController: UIViewController {
             return nil
         }
     }
+    
     private var selectedIDs: [Int] {
-        viewModel.requestDTO.goodsTypeSurveyResults.map { $0.goodsTypeId }
+        viewModel.requestDTO.goodsTypeSurveyResults.compactMap { $0.goodsTypeId }
     }
+
 
     // Coordinator 콜백
     var didTapNext: (() -> Void)?
@@ -86,7 +88,7 @@ private extension SurveyStepThreeViewController {
         surveyStepThreeView.nextButtonPublisher
             .sink { [weak self] in
                 guard let self else { return }
-                print("다음 클릭, requestDTO:", self.viewModel.requestDTO)
+                print("다음 클릭")
                 viewModel.loadGoods()
                 self.didTapNext?()
             }
@@ -95,6 +97,7 @@ private extension SurveyStepThreeViewController {
         // 뒤로가기
         surveyStepThreeView.getNavigationBar.backButtonPublisher
             .sink { [weak self] in
+                print("뒤로가기 클릭")
                 self?.viewModel.reset(step: .character)
                 self?.navigationController?.popViewController(animated: true)
             }

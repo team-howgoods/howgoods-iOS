@@ -42,6 +42,7 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     private let charactersSubject = CurrentValueSubject<[CharacterAnimation], Never>([])
     private let goodsTypesSubject = CurrentValueSubject<[GoodsType], Never>([])
     private let goodsSubject = CurrentValueSubject<[GoodsItem], Never>([])
+    private let searchGoodsSubject = CurrentValueSubject<[GoodsItem], Never>([])
     
     private let selectedAnimationsSubject = CurrentValueSubject<[Int], Never>([])
     private let selectedCharactersSubject = CurrentValueSubject<[Int], Never>([])
@@ -67,6 +68,10 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
         goodsSubject.eraseToAnyPublisher()
     }
     
+    var searchedGoods: AnyPublisher<[GoodsItem], Never> {
+        searchGoodsSubject.eraseToAnyPublisher()
+    }
+    
     var selectedAnimations: AnyPublisher<[Int], Never> {
         selectedAnimationsSubject.eraseToAnyPublisher()
     }
@@ -83,14 +88,27 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
         selectedGoodsSubject.eraseToAnyPublisher()
     }
     
+    
     var requestDTO: SubmitSurveyRequestDTO {
         SubmitSurveyRequestDTO(
-            animationSurveyResults: selectedAnimationsSubject.value.map { AnimationSurveyResultDTO(animationId: $0) },
-            characterSurveyResults: selectedCharactersSubject.value.map { CharacterSurveyResultDTO(characterId: $0) },
-            goodsTypeSurveyResults: selectedGoodsTypesSubject.value.map { GoodsTypeSurveyResultDTO(goodsTypeId: $0) },
-            goodsSurveyResults: selectedGoodsSubject.value.map { GoodsSurveyResultDTO(goodsId: $0) }
+            animationSurveyResults: selectedAnimationsSubject.value.isEmpty
+                ? [AnimationSurveyResultDTO(animationId: nil)]
+                : selectedAnimationsSubject.value.map { AnimationSurveyResultDTO(animationId: $0) },
+
+            characterSurveyResults: selectedCharactersSubject.value.isEmpty
+                ? [CharacterSurveyResultDTO(characterId: nil)]
+                : selectedCharactersSubject.value.map { CharacterSurveyResultDTO(characterId: $0) },
+
+            goodsTypeSurveyResults: selectedGoodsTypesSubject.value.isEmpty
+                ? [GoodsTypeSurveyResultDTO(goodsTypeId: nil)]
+                : selectedGoodsTypesSubject.value.map { GoodsTypeSurveyResultDTO(goodsTypeId: $0) },
+
+            goodsSurveyResults: selectedGoodsSubject.value.isEmpty
+                ? [GoodsSurveyResultDTO(goodsId: nil)]
+                : selectedGoodsSubject.value.map { GoodsSurveyResultDTO(goodsId: $0) }
         )
     }
+
     
     // MARK: - Init
     init(surveyUseCase: SurveyUseCaseProtocol) {
@@ -113,8 +131,7 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     }
     
     func loadCharacters() {
-        let animationIds = requestDTO.animationSurveyResults.map { $0.animationId }
-        if !charactersSubject.value.isEmpty { return }
+        let animationIds = requestDTO.animationSurveyResults.compactMap { $0.animationId }
         
         surveyUseCase.fetchCharacters(animationIds: animationIds) { [weak self] result in
             switch result {
@@ -139,8 +156,9 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     }
     
     func loadGoods() {
-        let animationIds = requestDTO.animationSurveyResults.map { $0.animationId }
-        let goodsTypeIds = requestDTO.goodsTypeSurveyResults.map { $0.goodsTypeId }
+        let animationIds = requestDTO.animationSurveyResults.compactMap { $0.animationId }
+        let goodsTypeIds = requestDTO.goodsTypeSurveyResults.compactMap { $0.goodsTypeId }
+        
         surveyUseCase.fetchGoods(animationIds: animationIds, goodsTypeIds: goodsTypeIds) { [weak self] result in
             switch result {
             case .success(let list):
@@ -149,6 +167,22 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
                 print("굿즈 불러오기 실패:", error)
             }
         }
+    }
+    
+    func searchGoods(keyword: String) {
+        surveyUseCase.searchGoods(keyword: keyword) { [weak self] result in
+            switch result {
+            case .success(let list):
+                self?.searchGoodsSubject.send(list)
+            case .failure(let error):
+                print("굿즈 검색 실패:", error)
+                self?.searchGoodsSubject.send([])
+            }
+        }
+    }
+    
+    func submitSurvey(completion: @escaping (Result<SubmitSurveyResponseDTO, Error>) -> Void) {
+        surveyUseCase.submitSurvey(requestDTO: requestDTO, completion: completion)
     }
     
     // MARK: - Input (단일 선택/해제)
@@ -192,26 +226,12 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     func reset(step: SurveyStep) {
         switch step {
         case .animation:
-            // 애니메이션 선택 초기화 + 목록도 초기화
             selectedAnimationsSubject.send([])
-            animationsSubject.send([])
-            charactersSubject.send([]) // 애니메이션 없으면 캐릭터도 무효화
-
         case .character:
-            // 캐릭터 선택 초기화 + 목록도 초기화
             selectedCharactersSubject.send([])
-            charactersSubject.send([])
-
         case .goodsType:
-            // 굿즈 타입 선택 초기화 + 목록도 초기화
             selectedGoodsTypesSubject.send([])
-            goodsTypesSubject.send([])
-            goodsSubject.send([]) // 굿즈 타입 없으면 굿즈도 무효화
-
-        case .goods:
-            // 굿즈 선택 초기화 + 목록도 초기화
-            selectedGoodsSubject.send([])
-            goodsSubject.send([])
+        case .goods: break
         }
     }
 
@@ -225,6 +245,10 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     /// goodsType 선택 전체 해제
     func clearAllGoodsTypes() {
         selectedGoodsTypesSubject.send([])
+    }
+    
+    func clearSearchedGoods() {
+        searchGoodsSubject.send([])
     }
     
     // MARK: - Helpers

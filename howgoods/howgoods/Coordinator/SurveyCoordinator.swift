@@ -70,6 +70,10 @@ final class SurveyCoordinator: Coordinator {
             self?.showSearchView()
         }
         
+        stepFourVC.didTapHome = { [weak self] in
+            self?.onFinish?()
+        }
+        
         navigationController.pushViewController(stepFourVC, animated: true)
     }
     

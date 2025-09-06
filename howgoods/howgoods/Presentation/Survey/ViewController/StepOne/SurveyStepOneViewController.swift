@@ -77,7 +77,7 @@ private extension SurveyStepOneViewController {
     func setActions() {
         surveyStepOneView.getTwoButton.primaryTapPublisher
             .sink {
-                print("완료 클릭, requestDTO:", self.viewModel.requestDTO)
+                print("완료 클릭")
                 self.viewModel.loadCharacters()
                 self.didTapNext?()
             }
@@ -87,7 +87,15 @@ private extension SurveyStepOneViewController {
             .sink {
                 print("다음에 할께요 클릭")
                 self.viewModel.reset(step: .animation)
-                self.didTapSkip?()
+                self.viewModel.submitSurvey { result in
+                    switch result {
+                    case .success(let response):
+                        print("서버 응답:", response)
+                        self.didTapSkip?()
+                    case .failure(let error):
+                        print("제출 실패:", error)
+                    }
+                }
             }
             .store(in: &cancellables)
     }
@@ -153,6 +161,7 @@ extension SurveyStepOneViewController: UICollectionViewDelegate {
             } else {
                 viewModel.select(step: .animation, id: item.id)
             }
+
         }
     }
 }

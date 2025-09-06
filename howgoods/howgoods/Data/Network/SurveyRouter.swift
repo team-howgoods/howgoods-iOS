@@ -13,6 +13,8 @@ enum SurveyRouter: URLRequestConvertible {
     case fetchGoodsType
     case fetchCharacters([Int])
     case fetchGoods([Int], [Int])
+    case searchGoods(String)
+    case submitSurvey(SubmitSurveyRequestDTO)
     
     private var baseURL: URL {
         return Bundle.main.baseAPIURL
@@ -20,8 +22,10 @@ enum SurveyRouter: URLRequestConvertible {
     
     private var method: HTTPMethod {
         switch self {
-        case .fetchAnimations, .fetchGoodsType, .fetchCharacters, .fetchGoods:
+        case .fetchAnimations, .fetchGoodsType, .fetchCharacters, .fetchGoods, .searchGoods:
             return .get
+        case .submitSurvey:
+            return .post
         }
     }
     
@@ -35,17 +39,23 @@ enum SurveyRouter: URLRequestConvertible {
             return "/api/survey/characters"
         case .fetchGoods:
             return "/api/survey/goods"
+        case .searchGoods:
+            return "/api/survey/search/goods"
+        case .submitSurvey:
+            return "/api/survey"
         }
     }
     
     func asURLRequest() throws -> URLRequest {
-        var url = baseURL.appendingPathComponent(path)
+        let url = baseURL.appendingPathComponent(path)
+        var request = URLRequest(url: url)
+        request.method = method
         
         switch self {
         case .fetchCharacters(let ids):
             var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
             components?.queryItems = ids.map { URLQueryItem(name: "animationIds", value: "\($0)") }
-            if let composedURL = components?.url { url = composedURL }
+            if let composedURL = components?.url { request.url = composedURL }
             
         case .fetchGoods(let animationIds, let goodsTypeIds):
             var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
@@ -53,14 +63,19 @@ enum SurveyRouter: URLRequestConvertible {
             query.append(contentsOf: animationIds.map { URLQueryItem(name: "animationIds", value: "\($0)") })
             query.append(contentsOf: goodsTypeIds.map { URLQueryItem(name: "goodsTypeIds", value: "\($0)") })
             components?.queryItems = query
-            if let composedURL = components?.url { url = composedURL }
+            if let composedURL = components?.url { request.url = composedURL }
+            
+        case .searchGoods(let keyword):
+            var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            components?.queryItems = [URLQueryItem(name: "keyword", value: keyword)]
+            if let composedURL = components?.url { request.url = composedURL }
+            
+        case .submitSurvey(let dto):
+            request = try JSONEncoding.default.encode(request, with: dto.toDictionary())
             
         default:
             break
         }
-        
-        var request = URLRequest(url: url)
-        request.method = method
         return request
     }
 }

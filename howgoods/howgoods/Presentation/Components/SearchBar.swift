@@ -165,3 +165,21 @@ private extension SearchBar {
         }
     }
 }
+
+// MARK: - Public API
+extension SearchBar {
+    /// 현재 입력된 텍스트를 가져오기
+    var text: String? {
+        get { textField.text }
+        set {
+            textField.text = newValue
+            clearButton.isHidden = (newValue ?? "").isEmpty
+        }
+    }
+    
+    /// 텍스트 초기화
+    func clear() {
+        textField.text = ""
+        clearButton.isHidden = true
+    }
+}
