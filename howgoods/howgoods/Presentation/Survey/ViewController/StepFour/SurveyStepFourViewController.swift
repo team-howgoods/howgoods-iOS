@@ -163,6 +163,12 @@ extension SurveyStepFourViewController: UICollectionViewDataSource, UICollection
                 cell.configure(with: item)
             }
             
+            cell.didTapRemoveButton
+                .sink { [weak self] goodsId in
+                    self?.viewModel.deselect(step: .goods, id: goodsId)
+                }
+                .store(in: &cancellables)
+            
             return cell
         } else {
             let groupIndex = adjustedGroupIndex(for: indexPath.section)

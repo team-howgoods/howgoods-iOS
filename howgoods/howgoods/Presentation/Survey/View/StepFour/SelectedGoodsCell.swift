@@ -12,9 +12,13 @@ final class SelectedGoodsCell: UICollectionViewCell {
     // MARK: - Properties
     static let identifier = "SelectedGoodsCell"
 
+    private var cancellables = Set<AnyCancellable>()
     private var id: Int?
-
-    /// 외부에서 구독할 퍼블리셔
+    private let removeButtonSubject = PassthroughSubject<Int, Never>()
+    
+    var didTapRemoveButton: AnyPublisher<Int, Never> {
+        removeButtonSubject.eraseToAnyPublisher()
+    }
 
     // MARK: - UI Components
     private let imageView = ImageView(cornerRadius: 8)
@@ -48,13 +52,19 @@ final class SelectedGoodsCell: UICollectionViewCell {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        cancellables.removeAll() // 재사용 시 기존 구독 해제
+    }
 
     // MARK: - Public Methods
     func configure(with item: GoodsItem) {
         id = item.id
         goodsNameLabel.setText(item.name, style: .captionSemibold11, color: .white)
         imageView.setImage(urlOrName: item.imageUrl)
+        
+        setBindings()
     }
 }
 
@@ -81,6 +91,7 @@ private extension SelectedGoodsCell {
     }
 
     func setConstraints() {
+        
         NSLayoutConstraint.activate([
             imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
             imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
@@ -99,5 +110,11 @@ private extension SelectedGoodsCell {
     }
 
     func setBindings() {
+        removeButton.publisher(for: .touchUpInside)
+            .sink { [weak self] in
+                guard let self, let id = self.id else { return }
+                removeButtonSubject.send(id)
+            }
+            .store(in: &cancellables)
     }
 }
