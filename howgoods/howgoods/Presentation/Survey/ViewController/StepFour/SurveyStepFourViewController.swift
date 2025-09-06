@@ -8,22 +8,21 @@ import UIKit
 import Combine
 
 final class SurveyStepFourViewController: UIViewController {
-    
     // MARK: - Properties
     private var collectionView: UICollectionView { surveyStepFourView.getCollectionView }
     private let surveyStepFourView = SurveyStepFourView()
     private let viewModel: SurveyViewModel
     private var cancellables = Set<AnyCancellable>()
     
-    /// 애니메이션 단위로 그룹핑된 굿즈
     private var groupedGoods: [(animationName: String, items: [GoodsItem])] = []
-    /// 섹션별 확장 상태 (몇 개를 보여줄지)
     private var expandedSections: [Int: Int] = [:]
     
-    // MARK: - Lifecycle
-    override func loadView() {
-        self.view = surveyStepFourView
+    private var hasSelection: Bool {
+        !viewModel.requestDTO.goodsSurveyResults.isEmpty
     }
+    
+    // MARK: - Lifecycle
+    override func loadView() { self.view = surveyStepFourView }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -36,12 +35,16 @@ final class SurveyStepFourViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
     
-    @available(*, unavailable, message: "compile error")
-    required init?(coder: NSCoder) {
-        fatalError()
-    }
+    required init?(coder: NSCoder) { fatalError() }
     
     var didTapSearch: (() -> Void)?
+}
+
+// MARK: - Helpers
+private extension SurveyStepFourViewController {
+    func adjustedGroupIndex(for section: Int) -> Int {
+        return section - (hasSelection ? 1 : 0)
+    }
 }
 
 // MARK: - UI Methods
@@ -59,27 +62,23 @@ private extension SurveyStepFourViewController {
             forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter,
             withReuseIdentifier: GoodsFooterView.identifier
         )
+        collectionView.register(
+            SelectedGoodsCell.self,
+            forCellWithReuseIdentifier: SelectedGoodsCell.identifier
+        )
         
-        setHierarchy()
         setStyles()
-        setConstraints()
         setActions()
         setBinding()
     }
     
-    func setHierarchy() { }
-    
     func setStyles() {
-        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = false
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = false
     }
-    
-    func setConstraints() { }
     
     func setActions() {
         surveyStepFourView.searchBarTapPublisher
-            .sink { [weak self] in
-                self?.didTapSearch?()
-            }
+            .sink { [weak self] in self?.didTapSearch?() }
             .store(in: &cancellables)
         
         surveyStepFourView.getNavigationBar.backButtonPublisher
@@ -94,112 +93,142 @@ private extension SurveyStepFourViewController {
         // 굿즈 리스트 바인딩
         viewModel.goods
             .receive(on: RunLoop.main)
-            .sink { [weak self] list in
-                guard let self else { return }
-                self.bindGoods(list)
-            }
+            .sink { [weak self] list in self?.bindGoods(list) }
             .store(in: &cancellables)
         
-        // 선택 상태 바인딩 → 셀 업데이트
+        // 선택 상태 바인딩
         viewModel.selectedGoods
             .receive(on: RunLoop.main)
-            .sink { [weak self] selectedIds in
+            .sink { [weak self] _ in
                 guard let self else { return }
-                for (sectionIdx, group) in groupedGoods.enumerated() {
-                    for (rowIdx, item) in group.items.enumerated() {
-                        let indexPath = IndexPath(item: rowIdx, section: sectionIdx)
-                        if let cell = collectionView.cellForItem(at: indexPath) as? GoodsCell {
-                            if let order = selectedIds.firstIndex(of: item.id) {
-                                cell.updateSelectionOrder(order + 1)
-                            } else {
-                                cell.updateSelectionOrder(nil)
-                            }
-                        }
-                    }
-                }
+                surveyStepFourView.hasSelection = self.hasSelection
+                collectionView.reloadData()
             }
             .store(in: &cancellables)
     }
     
     func bindGoods(_ list: [GoodsItem]) {
-        let grouped = Dictionary(grouping: list, by: { $0.animationName })
-        groupedGoods = grouped.map { (key, value) in
-            (animationName: key, items: value)
-        }
-        groupedGoods.sort { $0.animationName < $1.animationName }
+        groupedGoods = Dictionary(grouping: list, by: { $0.animationName })
+            .map { (key, value) in (animationName: key, items: value) }
+            .sorted { $0.animationName < $1.animationName }
         
-        // 각 섹션별 초기값 세팅
         expandedSections = [:]
         for (i, group) in groupedGoods.enumerated() {
             expandedSections[i] = min(4, group.items.count)
         }
-        
         collectionView.reloadData()
     }
-
     
     func toggleSection(_ section: Int) {
-        let total = groupedGoods[section].items.count
-        let current = expandedSections[section] ?? min(4, total)
+        let groupIndex = adjustedGroupIndex(for: section)
+        let total = groupedGoods[groupIndex].items.count
+        let current = expandedSections[groupIndex] ?? min(4, total)
+        expandedSections[groupIndex] = current >= total
+            ? min(4, total)
+            : min(current + 6, total)
         
-        if current >= total {
-            expandedSections[section] = min(4, total)
-        } else {
-            expandedSections[section] = min(current + 6, total)
-        }
-        
-        collectionView.reloadSections(IndexSet(integer: section))
+        collectionView.reloadSections([section])
     }
 }
 
 // MARK: - DataSource & Delegate
 extension SurveyStepFourViewController: UICollectionViewDataSource, UICollectionViewDelegate {
     func numberOfSections(in collectionView: UICollectionView) -> Int {
-        groupedGoods.count
+        return (hasSelection ? 1 : 0) + groupedGoods.count
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        let total = groupedGoods[section].items.count
-        return expandedSections[section] ?? min(4, total)
+        if hasSelection && section == 0 {
+            return viewModel.requestDTO.goodsSurveyResults.count
+        } else {
+            let groupIndex = adjustedGroupIndex(for: section)
+            let total = groupedGoods[groupIndex].items.count
+            return expandedSections[groupIndex] ?? min(4, total)
+        }
     }
     
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: GoodsCell.identifier, for: indexPath) as! GoodsCell
-        let item = groupedGoods[indexPath.section].items[indexPath.item]
-        cell.configure(with: item)
-        
-        let selectedIds = viewModel.requestDTO.goodsSurveyResults.map { $0.goodsId }
-        if let order = selectedIds.firstIndex(of: item.id) {
-            cell.updateSelectionOrder(order + 1)
+    func collectionView(_ collectionView: UICollectionView,
+                        cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        if hasSelection && indexPath.section == 0 {
+            let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: SelectedGoodsCell.identifier,
+                for: indexPath
+            ) as! SelectedGoodsCell
+            
+            let selectedIds = viewModel.requestDTO.goodsSurveyResults.map { $0.goodsId }
+            guard indexPath.item < selectedIds.count else { return cell }
+            
+            let id = selectedIds[indexPath.item]
+            if let item = groupedGoods.flatMap({ $0.items }).first(where: { $0.id == id }) {
+                cell.configure(with: item)
+            }
+            
+            return cell
         } else {
-            cell.updateSelectionOrder(nil)
+            let groupIndex = adjustedGroupIndex(for: indexPath.section)
+            let item = groupedGoods[groupIndex].items[indexPath.item]
+            
+            let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: GoodsCell.identifier,
+                for: indexPath
+            ) as! GoodsCell
+            cell.configure(with: item)
+            
+            let selectedIds = viewModel.requestDTO.goodsSurveyResults.map { $0.goodsId }
+            if let order = selectedIds.firstIndex(of: item.id) {
+                cell.updateSelectionOrder(order + 1)
+            } else {
+                cell.updateSelectionOrder(nil)
+            }
+            return cell
         }
-        return cell
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let id = groupedGoods[indexPath.section].items[indexPath.item].id
-        viewModel.select(step: .goods, id: id)
+        guard !(hasSelection && indexPath.section == 0) else { return }
+        let groupIndex = adjustedGroupIndex(for: indexPath.section)
+        let item = groupedGoods[groupIndex].items[indexPath.item]
+        
+        let selectedIds = viewModel.requestDTO.goodsSurveyResults.map { $0.goodsId }
+        
+        if selectedIds.contains(item.id) {
+            // 이미 선택됨 → 해제
+            viewModel.deselect(step: .goods, id: item.id)
+            collectionView.deselectItem(at: indexPath, animated: true)
+            
+            if let cell = collectionView.cellForItem(at: indexPath) as? GoodsCell {
+                cell.updateSelectionOrder(nil)
+            }
+        } else {
+            // 새로 선택됨
+            viewModel.select(step: .goods, id: item.id)
+            
+            if let cell = collectionView.cellForItem(at: indexPath) as? GoodsCell {
+                let newSelectedIds = viewModel.requestDTO.goodsSurveyResults.map { $0.goodsId }
+                if let order = newSelectedIds.firstIndex(of: item.id) {
+                    cell.updateSelectionOrder(order + 1)
+                }
+            }
+        }
     }
     
-    func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
-        let id = groupedGoods[indexPath.section].items[indexPath.item].id
-        viewModel.deselect(step: .goods, id: id)
-    }
-    
-    // 헤더 & 푸터
-    func collectionView(
-        _ collectionView: UICollectionView,
-        viewForSupplementaryElementOfKind kind: String,
-        at indexPath: IndexPath
-    ) -> UICollectionReusableView {
+    func collectionView(_ collectionView: UICollectionView,
+                        viewForSupplementaryElementOfKind kind: String,
+                        at indexPath: IndexPath) -> UICollectionReusableView {
+        // 선택된 굿즈 섹션(0번)이 있을 때만 헤더/푸터 제거
+        if hasSelection && indexPath.section == 0 {
+            return UICollectionReusableView()
+        }
+        
+        let groupIndex = adjustedGroupIndex(for: indexPath.section)
+        
         if kind == UICollectionView.elementKindSectionHeader {
             let header = collectionView.dequeueReusableSupplementaryView(
                 ofKind: kind,
                 withReuseIdentifier: GoodsSectionHeader.identifier,
                 for: indexPath
             ) as! GoodsSectionHeader
-            header.configure(title: groupedGoods[indexPath.section].animationName)
+            header.configure(title: groupedGoods[groupIndex].animationName)
             return header
         } else {
             let footer = collectionView.dequeueReusableSupplementaryView(
@@ -208,16 +237,14 @@ extension SurveyStepFourViewController: UICollectionViewDataSource, UICollection
                 for: indexPath
             ) as! GoodsFooterView
             
-            let total = groupedGoods[indexPath.section].items.count
-            // 4개 이하라면 숨기기
+            let total = groupedGoods[groupIndex].items.count
             if total <= 4 {
                 footer.isHidden = true
                 return footer
             }
             footer.isHidden = false
-            let current = expandedSections[indexPath.section] ?? min(4, total)
-            let isExpanded = current >= total
-            footer.update(isExpanded: isExpanded)
+            let current = expandedSections[groupIndex] ?? min(4, total)
+            footer.update(isExpanded: current >= total)
             
             footer.moreButtonPublisher
                 .sink { [weak self] in
@@ -228,64 +255,4 @@ extension SurveyStepFourViewController: UICollectionViewDataSource, UICollection
             return footer
         }
     }
-
 }
-
-// MARK: - FlowLayout
-extension SurveyStepFourViewController: UICollectionViewDelegateFlowLayout {
-    func collectionView(
-        _ collectionView: UICollectionView,
-        layout collectionViewLayout: UICollectionViewLayout,
-        sizeForItemAt indexPath: IndexPath
-    ) -> CGSize {
-        let interItemSpacing: CGFloat = 8
-        let itemsPerRow: CGFloat = 2
-        
-        let totalSpacing = (itemsPerRow - 1) * interItemSpacing
-        let availableWidth = collectionView.bounds.width - totalSpacing
-        let itemWidth = availableWidth / itemsPerRow
-        
-        return CGSize(width: itemWidth, height: itemWidth + 48)
-    }
-    
-    func collectionView(
-        _ collectionView: UICollectionView,
-        layout collectionViewLayout: UICollectionViewLayout,
-        referenceSizeForHeaderInSection section: Int
-    ) -> CGSize {
-        return CGSize(width: collectionView.bounds.width, height: 44)
-    }
-    
-    func collectionView(
-        _ collectionView: UICollectionView,
-        layout collectionViewLayout: UICollectionViewLayout,
-        referenceSizeForFooterInSection section: Int
-    ) -> CGSize {
-        return CGSize(width: collectionView.bounds.width, height: 60)
-    }
-    
-    func collectionView(
-        _ collectionView: UICollectionView,
-        layout collectionViewLayout: UICollectionViewLayout,
-        minimumInteritemSpacingForSectionAt section: Int
-    ) -> CGFloat {
-        return 8
-    }
-    
-    func collectionView(
-        _ collectionView: UICollectionView,
-        layout collectionViewLayout: UICollectionViewLayout,
-        minimumLineSpacingForSectionAt section: Int
-    ) -> CGFloat {
-        return 12
-    }
-    
-    func collectionView(
-        _ collectionView: UICollectionView,
-        layout collectionViewLayout: UICollectionViewLayout,
-        insetForSectionAt section: Int
-    ) -> UIEdgeInsets {
-        return UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
-    }
-}
-

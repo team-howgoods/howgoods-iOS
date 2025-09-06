@@ -32,7 +32,7 @@ final class SelectAllCell: UICollectionViewCell {
     private func configure() {
         contentView.addSubview(titleLabel)
         backgroundColor = .primary   // 초록 배경
-        layer.cornerRadius = 8
+        layer.cornerRadius = 16
         layer.masksToBounds = true
 
         NSLayoutConstraint.activate([
@@ -46,6 +46,6 @@ final class SelectAllCell: UICollectionViewCell {
         // TODO: 초록 배경이라 테두리는 흰색으로 추후 변경
         layer.borderWidth  = isSelected ? 5 : 0
         layer.borderColor  = isSelected ? UIColor.white.cgColor : UIColor.clear.cgColor
-        layer.cornerRadius = 8
+        layer.cornerRadius = 16
     }
 }

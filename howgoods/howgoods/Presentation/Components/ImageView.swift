@@ -21,7 +21,7 @@ final class ImageView: UIView {
         let v = UIImageView()
         v.translatesAutoresizingMaskIntoConstraints = false
         v.clipsToBounds = false
-        v.contentMode = .scaleAspectFill
+        v.contentMode = .scaleAspectFit
         v.isUserInteractionEnabled = false
         return v
     }()
@@ -43,8 +43,10 @@ final class ImageView: UIView {
     }
 
     private func setup() {
-        addSubview(imageView)
-        addSubview(shadowImageView)
+        addSubviews(
+            imageView,
+            shadowImageView
+        )
 
         layer.cornerRadius = cornerRadius
         clipsToBounds = true

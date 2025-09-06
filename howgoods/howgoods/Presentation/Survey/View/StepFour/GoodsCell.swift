@@ -16,7 +16,7 @@ final class GoodsCell: UICollectionViewCell {
         let image = UIImageView()
         image.layer.cornerRadius = 16
         image.clipsToBounds = true
-        image.contentMode = .scaleAspectFit
+        image.contentMode = .scaleAspectFill
         image.translatesAutoresizingMaskIntoConstraints = false
         return image
     }()
