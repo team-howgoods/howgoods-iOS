@@ -18,16 +18,16 @@ enum SurveyStep {
 
 // MARK: - Input / Output Protocol
 protocol SurveyViewModelInput {
-    func select(step: SurveyStep, id: Int)
-    func deselect(step: SurveyStep, id: Int)
+    func select(step: SurveyStep, id: Int?)
+    func deselect(step: SurveyStep, id: Int?)
     func reset(step: SurveyStep)
 }
 
 protocol SurveyViewModelOutput {
-    var selectedAnimations: AnyPublisher<[Int], Never> { get }
-    var selectedCharacters: AnyPublisher<[Int], Never> { get }
-    var selectedGoodsTypes: AnyPublisher<[Int], Never> { get }
-    var selectedGoods: AnyPublisher<[Int], Never> { get }
+    var selectedAnimations: AnyPublisher<[Int?], Never> { get }
+    var selectedCharacters: AnyPublisher<[Int?], Never> { get }
+    var selectedGoodsTypes: AnyPublisher<[Int?], Never> { get }
+    var selectedGoods: AnyPublisher<[Int?], Never> { get }
     
     var requestDTO: SubmitSurveyRequestDTO { get }
 }
@@ -44,10 +44,10 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     private let goodsSubject = CurrentValueSubject<[GoodsItem], Never>([])
     private let searchGoodsSubject = CurrentValueSubject<[GoodsItem], Never>([])
     
-    private let selectedAnimationsSubject = CurrentValueSubject<[Int], Never>([])
-    private let selectedCharactersSubject = CurrentValueSubject<[Int], Never>([])
-    private let selectedGoodsTypesSubject = CurrentValueSubject<[Int], Never>([])
-    private let selectedGoodsSubject = CurrentValueSubject<[Int], Never>([])
+    private let selectedAnimationsSubject = CurrentValueSubject<[Int?], Never>([])
+    private let selectedCharactersSubject = CurrentValueSubject<[Int?], Never>([])
+    private let selectedGoodsTypesSubject = CurrentValueSubject<[Int?], Never>([])
+    private let selectedGoodsSubject = CurrentValueSubject<[Int?], Never>([])
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -72,39 +72,40 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
         searchGoodsSubject.eraseToAnyPublisher()
     }
     
-    var selectedAnimations: AnyPublisher<[Int], Never> {
+    var selectedAnimations: AnyPublisher<[Int?], Never> {
         selectedAnimationsSubject.eraseToAnyPublisher()
     }
     
-    var selectedCharacters: AnyPublisher<[Int], Never> {
+    var selectedCharacters: AnyPublisher<[Int?], Never> {
         selectedCharactersSubject.eraseToAnyPublisher()
     }
     
-    var selectedGoodsTypes: AnyPublisher<[Int], Never> {
+    var selectedGoodsTypes: AnyPublisher<[Int?], Never> {
         selectedGoodsTypesSubject.eraseToAnyPublisher()
     }
     
-    var selectedGoods: AnyPublisher<[Int], Never> {
+    var selectedGoods: AnyPublisher<[Int?], Never> {
         selectedGoodsSubject.eraseToAnyPublisher()
     }
     
-    
+    // MARK: - Request DTO
     var requestDTO: SubmitSurveyRequestDTO {
+        // 내부 상태는 빈 배열 유지
         SubmitSurveyRequestDTO(
             animationSurveyResults: selectedAnimationsSubject.value.isEmpty
-                ? [AnimationSurveyResultDTO(animationId: nil)]
+                ? []
                 : selectedAnimationsSubject.value.map { AnimationSurveyResultDTO(animationId: $0) },
-
+            
             characterSurveyResults: selectedCharactersSubject.value.isEmpty
-                ? [CharacterSurveyResultDTO(characterId: nil)]
+                ? []
                 : selectedCharactersSubject.value.map { CharacterSurveyResultDTO(characterId: $0) },
-
+            
             goodsTypeSurveyResults: selectedGoodsTypesSubject.value.isEmpty
-                ? [GoodsTypeSurveyResultDTO(goodsTypeId: nil)]
+                ? []
                 : selectedGoodsTypesSubject.value.map { GoodsTypeSurveyResultDTO(goodsTypeId: $0) },
-
+            
             goodsSurveyResults: selectedGoodsSubject.value.isEmpty
-                ? [GoodsSurveyResultDTO(goodsId: nil)]
+                ? []
                 : selectedGoodsSubject.value.map { GoodsSurveyResultDTO(goodsId: $0) }
         )
     }
@@ -117,7 +118,6 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     
     // MARK: - API Call
     func loadAnimations() {
-        // 이미 값이 있으면 재호출 안 함
         if !animationsSubject.value.isEmpty { return }
         
         surveyUseCase.fetchAnimations { [weak self] result in
@@ -145,6 +145,7 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     
     func loadGoodsTypes() {
         if !goodsTypesSubject.value.isEmpty { return }
+        
         surveyUseCase.fetchGoodsTypes { [weak self] result in
             switch result {
             case .success(let list):
@@ -185,32 +186,34 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
         surveyUseCase.submitSurvey(requestDTO: requestDTO, completion: completion)
     }
     
-    // MARK: - Input (단일 선택/해제)
-    func select(step: SurveyStep, id: Int) {
+    // MARK: - Input (선택/해제)
+    func select(step: SurveyStep, id: Int?) {
         switch step {
         case .animation:
-            if id == -1 {
-                // "없어요" → 기존 선택 모두 지우고 -1만 남김
-                selectedAnimationsSubject.send([-1])
+            if id == nil {
+                // "좋아하는 애니 없음" → nil만 저장
+                selectedAnimationsSubject.send([nil])
             } else {
                 var values = selectedAnimationsSubject.value
-                // 만약 -1이 선택돼 있으면 해제
-                values.removeAll { $0 == -1 }
-                if !values.contains(id) && values.count < 5 {
+                values.removeAll { $0 == nil } // nil 있으면 제거
+                if !values.contains(where: { $0 == id }) && values.count < 5 {
                     values.append(id)
                 }
                 selectedAnimationsSubject.send(values)
             }
+            
         case .character:
             updateSelection(subject: selectedCharactersSubject, id: id, max: 5)
+            
         case .goodsType:
             updateSelection(subject: selectedGoodsTypesSubject, id: id)
+            
         case .goods:
             updateSelection(subject: selectedGoodsSubject, id: id, max: 5)
         }
     }
     
-    func deselect(step: SurveyStep, id: Int) {
+    func deselect(step: SurveyStep, id: Int?) {
         switch step {
         case .animation:
             removeSelection(subject: selectedAnimationsSubject, id: id)
@@ -231,47 +234,48 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
             selectedCharactersSubject.send([])
         case .goodsType:
             selectedGoodsTypesSubject.send([])
-        case .goods: break
+        case .goods:
+            selectedGoodsSubject.send([])
         }
     }
-
     
     // MARK: - 전체 선택/해제 (goodsType 전용) — 선택 제한 무시
     /// 전달된 모든 goodsType id를 한 번에 선택 (중복 제거)
-    func selectAllGoodsTypes(_ ids: [Int]) {
-        selectedGoodsTypesSubject.send(Array(Set(ids)))
+    func selectAllGoodsTypes(_ ids: [Int?]) {
+        // nil 제외 + 중복 제거
+        let nonNilIds = ids.compactMap { $0 }
+        selectedGoodsTypesSubject.send(Array(Set(nonNilIds)))
     }
-    
+
     /// goodsType 선택 전체 해제
     func clearAllGoodsTypes() {
         selectedGoodsTypesSubject.send([])
     }
-    
+
+    /// goods 검색 결과 초기화
     func clearSearchedGoods() {
         searchGoodsSubject.send([])
     }
     
     // MARK: - Helpers
     private func updateSelection(
-        subject: CurrentValueSubject<[Int], Never>,
-        id: Int,
+        subject: CurrentValueSubject<[Int?], Never>,
+        id: Int?,
         max: Int? = nil
     ) {
+        guard let id else { return } // nil은 select에서 따로 처리
         var values = subject.value
-        if !values.contains(id) {
+        if !values.contains(where: { $0 == id }) {
             if let max = max {
-                if values.count < max {
-                    values.append(id)
-                }
+                if values.count < max { values.append(id) }
             } else {
-                values.append(id) // 제한 없음
+                values.append(id)
             }
         }
         subject.send(values)
     }
 
-    
-    private func removeSelection(subject: CurrentValueSubject<[Int], Never>, id: Int) {
+    private func removeSelection(subject: CurrentValueSubject<[Int?], Never>, id: Int?) {
         var values = subject.value
         values.removeAll { $0 == id }
         subject.send(values)

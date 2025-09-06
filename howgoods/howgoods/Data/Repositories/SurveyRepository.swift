@@ -101,7 +101,8 @@ final class SurveyRepository: SurveyRepositoryProtocol {
         requestDTO: SubmitSurveyRequestDTO,
         completion: @escaping (Result<SubmitSurveyResponseDTO, Error>) -> Void
     ) {
-        session.request(SurveyRouter.submitSurvey(requestDTO))
+        let normalizedDTO = requestDTO.normalized
+        session.request(SurveyRouter.submitSurvey(normalizedDTO))
             .validate()
             .responseDecodable(of: SubmitSurveyResponseDTO.self) { response in
                 switch response.result {

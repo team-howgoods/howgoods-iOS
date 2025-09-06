@@ -83,7 +83,7 @@ final class SurveyCoordinator: Coordinator {
     }
     
     private func showNoPreference() {
-        let noPreferenceVC = SurveyNoPreferenceViewController()
+        let noPreferenceVC = SurveyNoPreferenceViewController(viewModel: viewModel)
         
         noPreferenceVC.didTapHome = { [weak self] in
             self?.onFinish?()

@@ -78,24 +78,23 @@ private extension SurveyStepOneViewController {
         surveyStepOneView.getTwoButton.primaryTapPublisher
             .sink {
                 print("완료 클릭")
-                self.viewModel.loadCharacters()
-                self.didTapNext?()
+                if self.viewModel.requestDTO.animationSurveyResults.contains(where: { $0.animationId == nil }) {
+                    // "없어요" 선택됨 → skip 로직 실행
+                    self.viewModel.reset(step: .animation)
+                    self.didTapSkip?()
+                } else {
+                    // 정상 선택됨 → 다음 단계
+                    self.viewModel.loadCharacters()
+                    self.didTapNext?()
+                }
             }
             .store(in: &cancellables)
         
         surveyStepOneView.getTwoButton.skipButtonTapPublisher
             .sink {
                 print("다음에 할께요 클릭")
+                self.didTapSkip?()
                 self.viewModel.reset(step: .animation)
-                self.viewModel.submitSurvey { result in
-                    switch result {
-                    case .success(let response):
-                        print("서버 응답:", response)
-                        self.didTapSkip?()
-                    case .failure(let error):
-                        print("제출 실패:", error)
-                    }
-                }
             }
             .store(in: &cancellables)
     }
@@ -136,7 +135,7 @@ extension SurveyStepOneViewController: UICollectionViewDataSource {
         }
         
         if indexPath.item == 0 {
-            let isSelected = viewModel.requestDTO.animationSurveyResults.contains { $0.animationId == -1 }
+            let isSelected = viewModel.requestDTO.animationSurveyResults.contains { $0.animationId == nil }
             cell.configure(title: "좋아하는 애니메이션이 없어요", isSelected: isSelected)
         } else {
             let item = animations[indexPath.item - 1]
@@ -152,16 +151,16 @@ extension SurveyStepOneViewController: UICollectionViewDataSource {
 extension SurveyStepOneViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if indexPath.item == 0 {
-            viewModel.select(step: .animation, id: -1)
+            // "좋아하는 애니메이션이 없어요" → nil 삽입
+            viewModel.select(step: .animation, id: nil)
         } else {
             let item = animations[indexPath.item - 1]
-            
             if viewModel.requestDTO.animationSurveyResults.contains(where: { $0.animationId == item.id }) {
                 viewModel.deselect(step: .animation, id: item.id)
             } else {
                 viewModel.select(step: .animation, id: item.id)
             }
-
         }
     }
 }
+
