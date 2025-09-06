@@ -32,7 +32,6 @@ final class SearchViewController: UIViewController {
         
         // 기존 선택값을 임시 배열에 복사
         tempSelectedGoods = viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }
-        
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -62,7 +61,7 @@ final class SearchViewController: UIViewController {
 private extension SearchViewController {
     func configure() {
         collectionView.dataSource = self
-        collectionView.delegate   = self
+        collectionView.delegate = self
         
         setActions()
         setBinding()
@@ -130,42 +129,36 @@ extension SearchViewController: UICollectionViewDataSource, UICollectionViewDele
         return goods.count
     }
     
-    func collectionView(_ collectionView: UICollectionView,
-                        cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let item = goods[indexPath.item]
         
         let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: GoodsCell.identifier,
             for: indexPath
         ) as! GoodsCell
-        cell.configure(with: item)
         
-        if let order = tempSelectedGoods.firstIndex(of: item.id) {
-            cell.updateSelectionOrder(order + 1)
-        } else {
-            cell.updateSelectionOrder(nil)
-        }
+        // 선택된 순서 배지 업데이트
+        let order = tempSelectedGoods.firstIndex(of: item.id).map { $0 + 1 }
+        cell.configure(with: item, order: order)
         return cell
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let item = goods[indexPath.item]
-        
+
         if let index = tempSelectedGoods.firstIndex(of: item.id) {
             // 해제
             tempSelectedGoods.remove(at: index)
-            if let cell = collectionView.cellForItem(at: indexPath) as? GoodsCell {
-                cell.updateSelectionOrder(nil)
-            }
         } else {
             // 선택
             tempSelectedGoods.append(item.id)
-            if let cell = collectionView.cellForItem(at: indexPath) as? GoodsCell {
-                let order = tempSelectedGoods.firstIndex(of: item.id) ?? 0
-                cell.updateSelectionOrder(order + 1)
-            }
         }
-        
-        collectionView.reloadData() // 전체 인덱스 업데이트
+
+        // 선택된 항목만 갱신하도록 하기 위해 전체 리로드 대신 스냅샷 갱신을 사용
+        let selectedSet = Set(tempSelectedGoods)
+        let visible = collectionView.indexPathsForVisibleItems
+        var toReload = Set(visible.filter { selectedSet.contains(goods[$0.item].id) })
+        toReload.insert(indexPath) // 탭한 셀 포함
+        collectionView.reloadItems(at: Array(toReload))
     }
 }

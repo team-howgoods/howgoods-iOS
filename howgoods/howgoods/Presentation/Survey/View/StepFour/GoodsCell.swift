@@ -6,13 +6,15 @@
 //
 
 import UIKit
+import Kingfisher
+import Combine
 
 final class GoodsCell: UICollectionViewCell {
     // MARK: - Properties
     static let identifier = "GoodsCell"
     
     // MARK: - UI Components
-    private var imageView: UIImageView = {
+    private let imageView: UIImageView = {
         let image = UIImageView()
         image.layer.cornerRadius = 16
         image.clipsToBounds = true
@@ -29,7 +31,7 @@ final class GoodsCell: UICollectionViewCell {
         label.layer.cornerRadius = 4
         label.clipsToBounds = true
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.isHidden = true // 기본은 숨김
+        label.isHidden = true
         return label
     }()
     
@@ -37,16 +39,18 @@ final class GoodsCell: UICollectionViewCell {
         let label = UILabel()
         label.numberOfLines = 2
         label.lineBreakMode = .byWordWrapping
-        label.adjustsFontSizeToFitWidth = false
         label.translatesAutoresizingMaskIntoConstraints = false
         label.textAlignment = .left
         return label
     }()
 
+    // MARK: - State
+    private var cancellables = Set<AnyCancellable>()
+    private var currentId: Int?
+
     // MARK: - Initializer
     override init(frame: CGRect) {
         super.init(frame: frame)
-        
         configure()
     }
     
@@ -54,12 +58,7 @@ final class GoodsCell: UICollectionViewCell {
         super.prepareForReuse()
         imageView.image = nil
         nameLabel.text = nil
-    }
-    
-    override var isSelected: Bool {
-        didSet {
-            badgeLabel.isHidden = !isSelected
-        }
+        updateSelectionOrder(nil)
     }
     
     @available(*, unavailable, message: "storyboard is not supported.")
@@ -68,9 +67,11 @@ final class GoodsCell: UICollectionViewCell {
     }
     
     // MARK: - Public Methods
-    func configure(with goods: GoodsItem) {
+    func configure(with goods: GoodsItem, order: Int? = nil) {
+        currentId = goods.id
         imageView.kf.setImage(with: URL(string: goods.imageUrl))
         nameLabel.setText(goods.name, style: .label1Medium22, color: .textDefault)
+        updateSelectionOrder(order)
     }
     
     func updateSelectionOrder(_ order: Int?) {
@@ -86,16 +87,14 @@ final class GoodsCell: UICollectionViewCell {
     }
 }
 
+// MARK: - Configure
 private extension GoodsCell {
-    // MARK: - configure
     func configure() {
         setHierarchy()
         setStyles()
         setConstraints()
-        setBindings()
     }
     
-    // MARK: - setHierarchy
     func setHierarchy() {
         contentView.addSubviews(
             imageView,
@@ -104,17 +103,16 @@ private extension GoodsCell {
         )
     }
     
-    // MARK: - setStyles
     func setStyles() {
         backgroundColor = .white
     }
     
-    // MARK: - setConstraints
     func setConstraints() {
         NSLayoutConstraint.activate([
             imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
             imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            imageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -48),
             
             badgeLabel.topAnchor.constraint(equalTo: imageView.topAnchor, constant: 12),
             badgeLabel.leadingAnchor.constraint(equalTo: imageView.leadingAnchor, constant: 12),
@@ -130,11 +128,4 @@ private extension GoodsCell {
         nameLabel.setContentCompressionResistancePriority(.required, for: .vertical)
         nameLabel.setContentHuggingPriority(.required, for: .vertical)
     }
-    
-    // MARK: - setBindings
-    func setBindings() {
-        
-    }
 }
-
-

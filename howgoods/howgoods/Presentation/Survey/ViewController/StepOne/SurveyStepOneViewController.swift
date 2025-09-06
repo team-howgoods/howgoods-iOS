@@ -25,6 +25,7 @@ final class SurveyStepOneViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configure()
+        self.viewModel.loadAnimations()
     }
     
     override func viewDidLayoutSubviews() {

@@ -4,7 +4,6 @@
 //
 //  Created by 양원식 on 9/6/25.
 //
-
 import UIKit
 import Combine
 
@@ -37,7 +36,6 @@ final class SelectedGoodsCell: UICollectionViewCell {
         var config = UIButton.Configuration.plain()
         config.image = UIImage(systemName: "xmark.circle.fill")
         config.baseForegroundColor = .iconDark
-
         let button = UIButton(configuration: config, primaryAction: nil)
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
@@ -55,7 +53,9 @@ final class SelectedGoodsCell: UICollectionViewCell {
     
     override func prepareForReuse() {
         super.prepareForReuse()
-        cancellables.removeAll() // 재사용 시 기존 구독 해제
+        cancellables.removeAll()  // 이전 구독 제거
+        imageView.reset()  // 이미지 초기화
+        goodsNameLabel.text = nil  // 텍스트 초기화
     }
 
     // MARK: - Public Methods
@@ -74,7 +74,6 @@ private extension SelectedGoodsCell {
         setHierarchy()
         setStyles()
         setConstraints()
-        setBindings()
     }
 
     func setHierarchy() {
@@ -91,7 +90,6 @@ private extension SelectedGoodsCell {
     }
 
     func setConstraints() {
-        
         NSLayoutConstraint.activate([
             imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
             imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
@@ -113,7 +111,7 @@ private extension SelectedGoodsCell {
         removeButton.publisher(for: .touchUpInside)
             .sink { [weak self] in
                 guard let self, let id = self.id else { return }
-                removeButtonSubject.send(id)
+                self.removeButtonSubject.send(id)
             }
             .store(in: &cancellables)
     }

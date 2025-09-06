@@ -92,6 +92,12 @@ final class ImageView: UIView {
             imageView.image = UIImage(named: s) ?? placeholder
         }
     }
+    
+    func reset() {
+        imageView.kf.cancelDownloadTask()
+        imageView.image = nil
+    }
+
 }
 
 private extension String {

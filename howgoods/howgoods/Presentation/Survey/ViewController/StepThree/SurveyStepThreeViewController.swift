@@ -90,6 +90,7 @@ private extension SurveyStepThreeViewController {
                 guard let self else { return }
                 print("다음 클릭")
                 viewModel.loadGoods()
+                //viewModel.sendDummyData()
                 self.didTapNext?()
             }
             .store(in: &cancellables)

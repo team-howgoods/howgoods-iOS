@@ -8,6 +8,7 @@
 import UIKit
 import Combine
 
+// TODO: 안쓸 것 같음 일딴 보류
 final class SurveyView: UIView {
     // MARK: - Properties
     

@@ -183,8 +183,15 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     }
     
     func submitSurvey(completion: @escaping (Result<SubmitSurveyResponseDTO, Error>) -> Void) {
-        surveyUseCase.submitSurvey(requestDTO: requestDTO, completion: completion)
+        print("submitSurvey 호출됨")
+        dump(requestDTO) // 보낸 값 전체 구조 확인
+
+        surveyUseCase.submitSurvey(requestDTO: requestDTO) { result in
+            print("서버 응답:", result)
+            completion(result)
+        }
     }
+
     
     // MARK: - Input (선택/해제)
     func select(step: SurveyStep, id: Int?) {
@@ -209,7 +216,7 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
             updateSelection(subject: selectedGoodsTypesSubject, id: id)
             
         case .goods:
-            updateSelection(subject: selectedGoodsSubject, id: id, max: 5)
+            updateSelection(subject: selectedGoodsSubject, id: id, max: 30)
         }
     }
     
@@ -256,6 +263,12 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     func clearSearchedGoods() {
         searchGoodsSubject.send([])
     }
+    
+//    // 더미 데이터를 받는 메서드
+//    func sendDummyData() {
+//        let dummyData = GoodsItem.dummy
+//        goodsSubject.send(dummyData) // `send` 메서드를 통해 더미 데이터를 `Subject`로 보냄
+//    }
     
     // MARK: - Helpers
     private func updateSelection(

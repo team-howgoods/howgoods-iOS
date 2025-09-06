@@ -108,6 +108,7 @@ final class SurveyRepository: SurveyRepositoryProtocol {
                 switch response.result {
                 case .success(let dto):
                     completion(.success(dto))
+                    print(dto)
                 case .failure(let error):
                     if let data = response.data,
                        let rawString = String(data: data, encoding: .utf8) {

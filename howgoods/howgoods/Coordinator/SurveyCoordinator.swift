@@ -19,17 +19,6 @@ final class SurveyCoordinator: Coordinator {
     }
     
     func start() {
-        let surveyVC = SurveyViewController(viewModel: viewModel)
-        
-        surveyVC.didTapStart = { [weak self] in
-            self?.showStepOne()
-        }
-        
-        navigationController.pushViewController(surveyVC, animated: true)
-    }
-    
-    private func showStepOne() {
-        
         let stepOneVC = SurveyStepOneViewController(viewModel: viewModel)
 
         stepOneVC.didTapNext = { [weak self] in
@@ -41,6 +30,15 @@ final class SurveyCoordinator: Coordinator {
         }
         
         navigationController.pushViewController(stepOneVC, animated: true)
+        
+        // TODO: 안쓸 것 같음 일딴 보류
+//        let surveyVC = SurveyViewController(viewModel: viewModel)
+//        
+//        surveyVC.didTapStart = { [weak self] in
+//            self?.showStepOne()
+//        }
+//        
+//        navigationController.pushViewController(surveyVC, animated: true)
     }
     
     private func showStepTwo() {

@@ -8,6 +8,7 @@
 import UIKit
 import Combine
 
+// TODO: 안쓸 것 같음 일딴 보류
 final class SurveyViewController: UIViewController {
     
     // MARK: - Properties
@@ -62,7 +63,6 @@ private extension SurveyViewController {
             .sink {
                 print("지금 시작하기 클릭")
                 self.didTapStart?()
-                self.viewModel.loadAnimations()
             }
             .store(in: &cancellables)
         

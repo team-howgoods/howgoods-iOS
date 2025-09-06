@@ -9,13 +9,6 @@ import UIKit
 import Combine
 
 final class SurveyStepFourView: UIView {
-    // MARK: - Properties
-    var hasSelection: Bool = false {
-        didSet {
-            collectionView.setCollectionViewLayout(createLayout(), animated: false)
-        }
-    }
-    
     // MARK: - UI Components
     private let navigationBar: CustomNavigationBar = {
         let v = CustomNavigationBar()
@@ -42,83 +35,10 @@ final class SurveyStepFourView: UIView {
         return bar
     }()
     
-    private func createLayout() -> UICollectionViewCompositionalLayout {
-        UICollectionViewCompositionalLayout { [weak self] sectionIndex, environment in
-            guard let self else { return nil }
-            
-            if self.hasSelection && sectionIndex == 0 {
-                // 선택된 굿즈 섹션 → header/footer 없음
-                let itemSize = NSCollectionLayoutSize(
-                    widthDimension: .absolute(88),
-                    heightDimension: .absolute(88)
-                )
-                let item = NSCollectionLayoutItem(layoutSize: itemSize)
-                let group = NSCollectionLayoutGroup.horizontal(layoutSize: itemSize, subitems: [item])
-                
-                let section = NSCollectionLayoutSection(group: group)
-                section.orthogonalScrollingBehavior = .continuous
-                section.interGroupSpacing = 4
-                section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16)
-                section.boundarySupplementaryItems = []   // header/footer 제거
-                return section
-            } else {
-                // 일반 굿즈 섹션
-                let interItemSpacing: CGFloat = 8
-                let itemsPerRow: CGFloat = 2
-                let availableWidth = environment.container.effectiveContentSize.width
-                    - 32 - (itemsPerRow - 1) * interItemSpacing
-                let itemWidth = availableWidth / itemsPerRow
-                let itemHeight = itemWidth + 48
-                
-                let itemSize = NSCollectionLayoutSize(
-                    widthDimension: .absolute(itemWidth),
-                    heightDimension: .absolute(itemHeight)
-                )
-                let item = NSCollectionLayoutItem(layoutSize: itemSize)
-                
-                let groupSize = NSCollectionLayoutSize(
-                    widthDimension: .fractionalWidth(1.0),
-                    heightDimension: .absolute(itemHeight)
-                )
-                let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item, item])
-                group.interItemSpacing = .fixed(interItemSpacing)
-                
-                let section = NSCollectionLayoutSection(group: group)
-                section.interGroupSpacing = 12
-                section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
-                
-                // 헤더 / 푸터 추가
-                let header = NSCollectionLayoutBoundarySupplementaryItem(
-                    layoutSize: NSCollectionLayoutSize(
-                        widthDimension: .fractionalWidth(1.0),
-                        heightDimension: .absolute(44)
-                    ),
-                    elementKind: UICollectionView.elementKindSectionHeader,
-                    alignment: .top
-                )
-                
-                let footer = NSCollectionLayoutBoundarySupplementaryItem(
-                    layoutSize: NSCollectionLayoutSize(
-                        widthDimension: .fractionalWidth(1.0),
-                        heightDimension: .absolute(60)
-                    ),
-                    elementKind: UICollectionView.elementKindSectionFooter,
-                    alignment: .bottom
-                )
-                
-                section.boundarySupplementaryItems = [header, footer]
-                
-                return section
-            }
-        }
-    }
-    
     private lazy var collectionView: UICollectionView = {
-        let cv = UICollectionView(frame: .zero, collectionViewLayout: createLayout())
+        let cv = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
         cv.translatesAutoresizingMaskIntoConstraints = false
-        cv.register(GoodsCell.self, forCellWithReuseIdentifier: GoodsCell.identifier)
-        cv.register(SelectedGoodsCell.self, forCellWithReuseIdentifier: SelectedGoodsCell.identifier)
-        cv.allowsMultipleSelection = true
+        cv.allowsMultipleSelection = false
         cv.backgroundColor = .white
         return cv
     }()
@@ -147,8 +67,30 @@ final class SurveyStepFourView: UIView {
     var getTwoButton: TwoButtonBar { twoButton }
     var getNavigationBar: CustomNavigationBar { navigationBar }
     var getCollectionView: UICollectionView { collectionView }
+    
+    /// dataSource를 받아 레이아웃 생성 (Item 기반으로 수정됨)
+    func createLayout(
+        dataSource: UICollectionViewDiffableDataSource<
+            SurveyStepFourViewController.Section,
+            SurveyStepFourViewController.Item
+        >
+    ) -> UICollectionViewCompositionalLayout {
+        UICollectionViewCompositionalLayout { [weak self] sectionIndex, environment in
+            guard let self else { return nil }
+            let identifiers = dataSource.snapshot().sectionIdentifiers
+            guard sectionIndex < identifiers.count else { return nil }
+            
+            switch identifiers[sectionIndex] {
+            case .selected:
+                return self.makeSelectedSection()
+            case .goods(_):
+                return self.makeNormalSection(environment: environment)
+            }
+        }
+    }
 }
 
+// MARK: - Configure
 private extension SurveyStepFourView {
     func configure() {
         setHierarchy()
@@ -192,5 +134,65 @@ private extension SurveyStepFourView {
             twoButton.trailingAnchor.constraint(equalTo: trailingAnchor),
             twoButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -11)
         ])
+    }
+}
+
+// MARK: - Layout
+private extension SurveyStepFourView {
+    /// 선택된 굿즈 섹션 (88x88, 가로 스크롤)
+    func makeSelectedSection() -> NSCollectionLayoutSection {
+        let itemSize = NSCollectionLayoutSize(
+            widthDimension: .absolute(88),
+            heightDimension: .absolute(88)
+        )
+        let item = NSCollectionLayoutItem(layoutSize: itemSize)
+        let group = NSCollectionLayoutGroup.horizontal(layoutSize: itemSize, subitems: [item])
+        
+        let section = NSCollectionLayoutSection(group: group)
+        section.orthogonalScrollingBehavior = .continuous
+        section.interGroupSpacing = 4
+        section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16)
+        section.boundarySupplementaryItems = []
+        return section
+    }
+    
+    /// 일반 굿즈 섹션 (2열 그리드)
+    func makeNormalSection(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+        let interItemSpacing: CGFloat = 8
+        let itemsPerRow: CGFloat = 2
+        let availableWidth = environment.container.effectiveContentSize.width
+            - 32 - (itemsPerRow - 1) * interItemSpacing
+        let itemWidth = availableWidth / itemsPerRow
+        let itemHeight = itemWidth + 48
+        
+        let itemSize = NSCollectionLayoutSize(
+            widthDimension: .absolute(itemWidth),
+            heightDimension: .absolute(itemHeight)
+        )
+        let item = NSCollectionLayoutItem(layoutSize: itemSize)
+        
+        let groupSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .absolute(itemHeight)
+        )
+        let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item, item])
+        group.interItemSpacing = .fixed(interItemSpacing)
+        
+        let section = NSCollectionLayoutSection(group: group)
+        section.interGroupSpacing = 12
+        section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
+        
+        let header = NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .absolute(44)),
+            elementKind: UICollectionView.elementKindSectionHeader,
+            alignment: .top
+        )
+        let footer = NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .absolute(60)),
+            elementKind: UICollectionView.elementKindSectionFooter,
+            alignment: .bottom
+        )
+        section.boundarySupplementaryItems = [header, footer]
+        return section
     }
 }

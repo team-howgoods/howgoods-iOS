@@ -8,304 +8,297 @@ import UIKit
 import Combine
 
 final class SurveyStepFourViewController: UIViewController {
+    // MARK: - Section / Item 정의
+    enum Section: Hashable {
+        case selected
+        case goods(String) // animationName
+    }
+
+    enum Item: Hashable {
+        case selected(Int)
+        case goods(Int)
+    }
+
     // MARK: - Properties
     private var collectionView: UICollectionView { surveyStepFourView.getCollectionView }
     private let surveyStepFourView = SurveyStepFourView()
     private let viewModel: SurveyViewModel
     private var cancellables = Set<AnyCancellable>()
-    
-    private var groupedGoods: [(animationName: String, items: [GoodsItem])] = []
-    private var expandedSections: [Int: Int] = [:]
-    
-    private var hasSelection: Bool {
-        !viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }.isEmpty
-    }
 
-    
+    private var groupedGoods: [String: [GoodsItem]] = [:]  // animationName -> GoodsItem[]
+    private var expandedSections: [String: Int] = [:] // 각 섹션별 현재 표시 개수
+    private var dataSource: UICollectionViewDiffableDataSource<Section, Item>!
+
+    // 스냅샷 적용 중 중복탭 보정
+    private var isApplyingSnapshot = false
+    private var pendingToggle: String?
+
     // MARK: - Lifecycle
     override func loadView() { self.view = surveyStepFourView }
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         configure()
     }
-    
+
     // MARK: - Initializer
     init(viewModel: SurveyViewModel) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
-    
     required init?(coder: NSCoder) { fatalError() }
-    
-    // Coordinator에서 주입할 이벤트 클로저
+
+    // Coordinator 이벤트 클로저
     var didTapHome: (() -> Void)?
     var didTapSearch: (() -> Void)?
 }
 
-// MARK: - Helpers
-private extension SurveyStepFourViewController {
-    func adjustedGroupIndex(for section: Int) -> Int {
-        return section - (hasSelection ? 1 : 0)
-    }
-}
-
-// MARK: - UI Methods
+// MARK: - Configure
 private extension SurveyStepFourViewController {
     func configure() {
-        collectionView.dataSource = self
-        collectionView.delegate   = self
-        collectionView.register(
-            GoodsSectionHeader.self,
+        setupDataSource()
+
+        // delegate & register
+        collectionView.delegate = self
+        collectionView.register(GoodsSectionHeader.self,
             forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
-            withReuseIdentifier: GoodsSectionHeader.identifier
-        )
-        collectionView.register(
-            GoodsFooterView.self,
+            withReuseIdentifier: GoodsSectionHeader.identifier)
+        collectionView.register(GoodsFooterView.self,
             forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter,
-            withReuseIdentifier: GoodsFooterView.identifier
-        )
-        collectionView.register(
-            SelectedGoodsCell.self,
-            forCellWithReuseIdentifier: SelectedGoodsCell.identifier
-        )
-        
+            withReuseIdentifier: GoodsFooterView.identifier)
+        collectionView.register(SelectedGoodsCell.self,
+            forCellWithReuseIdentifier: SelectedGoodsCell.identifier)
+        collectionView.register(GoodsCell.self,
+            forCellWithReuseIdentifier: GoodsCell.identifier)
+
         setStyles()
         setActions()
         setBinding()
     }
-    
+
     func setStyles() {
         navigationController?.interactivePopGestureRecognizer?.isEnabled = false
     }
-    
+
     func setActions() {
         surveyStepFourView.searchBarTapPublisher
             .sink { [weak self] in self?.didTapSearch?() }
             .store(in: &cancellables)
-        
+
         surveyStepFourView.getNavigationBar.backButtonPublisher
             .sink { [weak self] in
                 self?.viewModel.reset(step: .goodsType)
                 self?.navigationController?.popViewController(animated: true)
             }
             .store(in: &cancellables)
-        
+
         surveyStepFourView.getTwoButton.primaryTapPublisher
-            .sink {
-                print("완료 클릭, requestDTO:", self.viewModel.requestDTO)
-                self.viewModel.submitSurvey { result in
-                    switch result {
-                    case .success(let response):
-                        print("서버 응답:", response)
-                        self.didTapHome?()
-                    case .failure(let error):
-                        print("제출 실패:", error)
-                    }
+            .sink { [weak self] in
+                self?.viewModel.submitSurvey { result in
+                    if case .success = result { self?.didTapHome?() }
                 }
             }
             .store(in: &cancellables)
-        
+
         surveyStepFourView.getTwoButton.skipButtonTapPublisher
-            .sink {
-                print("다음에 할께요 클릭")
-                self.viewModel.reset(step: .goods)
-                self.viewModel.submitSurvey { result in
-                    switch result {
-                    case .success(let response):
-                        print("서버 응답:", response)
-                        self.didTapHome?()
-                    case .failure(let error):
-                        print("제출 실패:", error)
-                    }
+            .sink { [weak self] in
+                self?.viewModel.reset(step: .goods)
+                self?.viewModel.submitSurvey { result in
+                    if case .success = result { self?.didTapHome?() }
                 }
             }
             .store(in: &cancellables)
     }
-    
+
     func setBinding() {
-        // 굿즈 리스트 바인딩
+        // 굿즈 데이터 바인딩
         viewModel.goods
             .receive(on: RunLoop.main)
-            .sink { [weak self] list in self?.bindGoods(list) }
+            .sink { [weak self] in self?.bindGoods($0) }
             .store(in: &cancellables)
-        
-        // 선택 상태 바인딩
+
+        // 선택된 굿즈 바인딩
         viewModel.selectedGoods
             .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                guard let self else { return }
-                surveyStepFourView.hasSelection = self.hasSelection
-                collectionView.reloadData()
-            }
+            .sink { [weak self] _ in self?.applySnapshot(isToggle: false) }
             .store(in: &cancellables)
-    }
-    
-    func bindGoods(_ list: [GoodsItem]) {
-        groupedGoods = Dictionary(grouping: list, by: { $0.animationName })
-            .map { (key, value) in (animationName: key, items: value) }
-            .sorted { $0.animationName < $1.animationName }
-        
-        expandedSections = [:]
-        for (i, group) in groupedGoods.enumerated() {
-            expandedSections[i] = min(4, group.items.count)
-        }
-        collectionView.reloadData()
-    }
-    
-    func toggleSection(_ section: Int) {
-        let groupIndex = adjustedGroupIndex(for: section)
-        let total = groupedGoods[groupIndex].items.count
-        let current = expandedSections[groupIndex] ?? min(4, total)
-        expandedSections[groupIndex] = current >= total
-            ? min(4, total)
-            : min(current + 6, total)
-        
-        collectionView.reloadSections([section])
     }
 }
 
-// MARK: - DataSource & Delegate
-extension SurveyStepFourViewController: UICollectionViewDataSource, UICollectionViewDelegate {
-    func numberOfSections(in collectionView: UICollectionView) -> Int {
-        return (hasSelection ? 1 : 0) + groupedGoods.count
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        if hasSelection && section == 0 {
-            return viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }.count
-        } else {
-            let groupIndex = adjustedGroupIndex(for: section)
-            let total = groupedGoods[groupIndex].items.count
-            return expandedSections[groupIndex] ?? min(4, total)
-        }
-    }
-    
-    func collectionView(_ collectionView: UICollectionView,
-                        cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        if hasSelection && indexPath.section == 0 {
-            let cell = collectionView.dequeueReusableCell(
-                withReuseIdentifier: SelectedGoodsCell.identifier,
-                for: indexPath
-            ) as! SelectedGoodsCell
-            
-            let selectedIds = viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }
-            guard indexPath.item < selectedIds.count else { return cell }
-            
-            let id = selectedIds[indexPath.item]
-            if let item = groupedGoods.flatMap({ $0.items }).first(where: { $0.id == id }) {
-                cell.configure(with: item)
-            }
-            
-            cell.didTapRemoveButton
-                .sink { [weak self] goodsId in
-                    self?.viewModel.deselect(step: .goods, id: goodsId)
-                }
-                .store(in: &cancellables)
-            
-            return cell
-        } else {
-            let groupIndex = adjustedGroupIndex(for: indexPath.section)
-            let item = groupedGoods[groupIndex].items[indexPath.item]
-            
-            let cell = collectionView.dequeueReusableCell(
-                withReuseIdentifier: GoodsCell.identifier,
-                for: indexPath
-            ) as! GoodsCell
-            cell.configure(with: item)
-            
-            let selectedIds = viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }
-            if let order = selectedIds.firstIndex(of: item.id) {
-                cell.updateSelectionOrder(order + 1)
-            } else {
-                cell.updateSelectionOrder(nil)
-            }
-            return cell
-        }
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        guard !(hasSelection && indexPath.section == 0) else { return }
-        let groupIndex = adjustedGroupIndex(for: indexPath.section)
-        let item = groupedGoods[groupIndex].items[indexPath.item]
-        
-        let selectedIds = viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }
-        
-        if selectedIds.contains(item.id) {
-            // 이미 선택됨 → 해제
-            viewModel.deselect(step: .goods, id: item.id)
-            collectionView.deselectItem(at: indexPath, animated: true)
-            
-            if let cell = collectionView.cellForItem(at: indexPath) as? GoodsCell {
-                cell.updateSelectionOrder(nil)
-            }
-        } else {
-            // 새로 선택됨
-            viewModel.select(step: .goods, id: item.id)
-            
-            if let cell = collectionView.cellForItem(at: indexPath) as? GoodsCell {
-                let newSelectedIds = viewModel.requestDTO.goodsSurveyResults.map { $0.goodsId }
-                if let order = newSelectedIds.firstIndex(of: item.id) {
-                    cell.updateSelectionOrder(order + 1)
-                }
-            }
-        }
-    }
-    
-    func collectionView(_ collectionView: UICollectionView,
-                        viewForSupplementaryElementOfKind kind: String,
-                        at indexPath: IndexPath) -> UICollectionReusableView {
+// MARK: - Diffable Setup
+private extension SurveyStepFourViewController {
+    func setupDataSource() {
+        dataSource = UICollectionViewDiffableDataSource<Section, Item>(
+            collectionView: collectionView
+        ) { [weak self] collectionView, indexPath, item in
+            guard let self else { return UICollectionViewCell() }
 
-        let groupIndex = adjustedGroupIndex(for: indexPath.section)
+            switch item {
+            case .selected(let id):
+                return self.createSelectedCell(for: collectionView, indexPath: indexPath, id: id)
 
-        // groupIndex 가 유효하지 않으면: "빈 footer/header"라도 dequeue 해서 반환
-        guard groupIndex >= 0, groupIndex < groupedGoods.count else {
-            if kind == UICollectionView.elementKindSectionHeader {
-                return collectionView.dequeueReusableSupplementaryView(
-                    ofKind: kind,
-                    withReuseIdentifier: GoodsSectionHeader.identifier,
-                    for: indexPath
-                )
-            } else {
-                return collectionView.dequeueReusableSupplementaryView(
-                    ofKind: kind,
-                    withReuseIdentifier: GoodsFooterView.identifier,
-                    for: indexPath
-                )
+            case .goods(let id):
+                return self.createGoodsCell(for: collectionView, indexPath: indexPath, id: id)
             }
         }
 
+        // Supplementary View (header/footer)
+        dataSource.supplementaryViewProvider = { [weak self]
+            (collectionView: UICollectionView, kind: String, indexPath: IndexPath) -> UICollectionReusableView? in
+            guard let self else { return nil }
+            let section = self.dataSource.snapshot().sectionIdentifiers[indexPath.section]
+
+            switch section {
+            case .goods(let animationName):
+                return self.createFooterOrHeader(collectionView: collectionView, kind: kind, indexPath: indexPath, animationName: animationName)
+
+            default:
+                return nil
+            }
+        }
+
+        // 초기 레이아웃 적용
+        collectionView.setCollectionViewLayout(
+            surveyStepFourView.createLayout(dataSource: dataSource), animated: false
+        )
+    }
+
+    // MARK: - Cell Creation Helpers
+    private func createSelectedCell(for collectionView: UICollectionView, indexPath: IndexPath, id: Int) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(
+            withReuseIdentifier: SelectedGoodsCell.identifier, for: indexPath
+        ) as! SelectedGoodsCell
+        if let it = groupedGoods.flatMap({ $0.value }).first(where: { $0.id == id }) {
+            cell.configure(with: it)
+        }
+        cell.didTapRemoveButton
+            .sink { [weak self] goodsId in
+                self?.viewModel.deselect(step: .goods, id: goodsId)
+            }
+            .store(in: &cancellables)
+        return cell
+    }
+
+    private func createGoodsCell(for collectionView: UICollectionView, indexPath: IndexPath, id: Int) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(
+            withReuseIdentifier: GoodsCell.identifier, for: indexPath
+        ) as! GoodsCell
+        if let it = groupedGoods.flatMap({ $0.value }).first(where: { $0.id == id }) {
+            let selectedIds = self.viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }
+            let order = selectedIds.firstIndex(of: it.id).map { $0 + 1 }
+            cell.configure(with: it, order: order)
+        }
+        return cell
+    }
+
+    private func createFooterOrHeader(collectionView: UICollectionView, kind: String, indexPath: IndexPath, animationName: String) -> UICollectionReusableView? {
         if kind == UICollectionView.elementKindSectionHeader {
             let header = collectionView.dequeueReusableSupplementaryView(
-                ofKind: kind,
-                withReuseIdentifier: GoodsSectionHeader.identifier,
-                for: indexPath
+                ofKind: kind, withReuseIdentifier: GoodsSectionHeader.identifier, for: indexPath
             ) as! GoodsSectionHeader
-            header.configure(title: groupedGoods[groupIndex].animationName)
+            header.configure(title: animationName)
             return header
         } else {
             let footer = collectionView.dequeueReusableSupplementaryView(
-                ofKind: kind,
-                withReuseIdentifier: GoodsFooterView.identifier,
-                for: indexPath
+                ofKind: kind, withReuseIdentifier: GoodsFooterView.identifier, for: indexPath
             ) as! GoodsFooterView
-
-            let total = groupedGoods[groupIndex].items.count
-            if total <= 4 {
-                footer.isHidden = true
-                return footer
+            if let group = groupedGoods[animationName] {
+                let total = group.count
+                let current = expandedSections[animationName] ?? min(4, total)
+                footer.isHidden = total <= 4
+                footer.configure(total: total, visibleCount: current)
+                footer.moreButtonPublisher
+                    .sink { [weak self] in self?.toggleSection(animationName: animationName) }
+                    .store(in: &footer.reuseBag)
             }
-            footer.isHidden = false
-            let current = expandedSections[groupIndex] ?? min(4, total)
-            footer.update(isExpanded: current >= total)
-
-            footer.moreButtonPublisher
-                .sink { [weak self] in
-                    self?.toggleSection(indexPath.section)
-                }
-                .store(in: &cancellables)
-
             return footer
+        }
+    }
+
+    // MARK: - Snapshot Management
+    private func applySnapshot(isToggle: Bool, sectionToReloads: [String]? = nil) {
+        guard !isApplyingSnapshot else {
+            if let name = sectionToReloads?.last { pendingToggle = name }
+            return
+        }
+        isApplyingSnapshot = true
+
+        var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
+
+        let selectedIds = viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }
+        let allGoodsIds = groupedGoods.flatMap { $0.value.map { $0.id } }
+
+        if !selectedIds.isEmpty {
+            snapshot.appendSections([.selected])
+            snapshot.appendItems(selectedIds.map { Item.selected($0) }, toSection: .selected)
+        }
+
+        for (name, items) in groupedGoods {
+            snapshot.appendSections([.goods(name)])
+            let limit = expandedSections[name] ?? min(4, items.count)
+            snapshot.appendItems(items.prefix(limit).map { Item.goods($0.id) }, toSection: .goods(name))
+        }
+
+        let reloadItems = allGoodsIds.map { Item.goods($0) }
+        let existingItems = snapshot.itemIdentifiers.filter { reloadItems.contains($0) }
+        snapshot.reloadItems(existingItems)
+
+        let goodsSections = (sectionToReloads ?? Array(groupedGoods.keys))
+            .map { Section.goods($0) }
+        snapshot.reloadSections(goodsSections)
+
+        dataSource.apply(snapshot, animatingDifferences: isToggle) { [weak self] in
+            self?.isApplyingSnapshot = false
+            if let name = self?.pendingToggle {
+                self?.pendingToggle = nil
+                self?.toggleSection(animationName: name)
+            }
+        }
+    }
+}
+
+// MARK: - Helpers
+private extension SurveyStepFourViewController {
+    func bindGoods(_ list: [GoodsItem]) {
+        // 데이터를 그룹핑하되, 원본 순서를 유지하도록 수정
+        groupedGoods = [:]
+        
+        // 각 항목을 그룹에 추가하면서 원본 순서대로 그룹화
+        for item in list {
+            if groupedGoods[item.animationName] == nil {
+                groupedGoods[item.animationName] = []
+            }
+            groupedGoods[item.animationName]?.append(item)
+        }
+        
+        // 초기 표시할 개수는 최대 4개로 설정
+        expandedSections = groupedGoods.reduce(into: [:]) { $0[$1.key] = min(4, $1.value.count) }
+        
+        applySnapshot(isToggle: false)
+    }
+    func toggleSection(animationName: String) {
+        guard let group = groupedGoods[animationName] else { return }
+        let total = group.count
+        let current = expandedSections[animationName] ?? min(4, total)
+        expandedSections[animationName] = current >= total ? 4 : min(current + 6, total)
+
+        applySnapshot(isToggle: true, sectionToReloads: [animationName])
+    }
+}
+
+// MARK: - Delegate
+extension SurveyStepFourViewController: UICollectionViewDelegate {
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard let item = dataSource.itemIdentifier(for: indexPath) else { return }
+        switch item {
+        case .selected(let id):
+            viewModel.deselect(step: .goods, id: id)
+        case .goods(let id):
+            let selectedIds = viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }
+            if selectedIds.contains(id) {
+                viewModel.deselect(step: .goods, id: id)
+            } else {
+                viewModel.select(step: .goods, id: id)
+            }
         }
     }
 }
