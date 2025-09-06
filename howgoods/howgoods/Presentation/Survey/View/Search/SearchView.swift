@@ -79,6 +79,7 @@ final class SearchView: UIView {
     var getNavigationBar: CustomNavigationBar {
         navigationBar
     }
+    var getConfirmButton: OneButton { confirmButton }
     var getCollectionView: UICollectionView { collectionView }
     var getSearchBar: SearchBar { searchBar }
     var getEmptyLabel: UILabel { emptyLabel }
@@ -178,5 +179,3 @@ private extension SearchView {
         
     }
 }
-
-
