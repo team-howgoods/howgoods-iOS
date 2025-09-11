@@ -20,8 +20,8 @@ final class SearchViewController: UIViewController {
     
     /// 임시 선택된 굿즈 ID 목록 (순서 유지)
     private var tempSelectedGoods: [Int] = []
-
-    /// SearchBar 내부 UITextField (재귀 탐색으로 안전하게 주입)
+    
+    /// SearchBar 내부 UITextField
     private weak var searchTextField: UITextField?
     
     // MARK: - Lifecycle
@@ -33,21 +33,19 @@ final class SearchViewController: UIViewController {
         super.viewDidLoad()
         configure()
         
-        // 기존 선택값을 임시 배열에 복사
+        // 기존 선택값 복사
         tempSelectedGoods = viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }
-
+        
         // 키보드 액세서리/제스처 연결
         wireUpKeyboardAccessories()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // 검색창 초기화
+        // 검색 초기화
         searchView.getSearchBar.text = ""
-        // 검색 결과 초기화
         goods = []
         collectionView.reloadData()
-        // 뷰모델의 검색 상태도 초기화
         viewModel.clearSearchedGoods()
     }
     
@@ -57,7 +55,7 @@ final class SearchViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
     
-    @available(*, unavailable, message: "compile error")
+    @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError()
     }
@@ -68,11 +66,15 @@ private extension SearchViewController {
     func configure() {
         collectionView.dataSource = self
         collectionView.delegate = self
-        collectionView.keyboardDismissMode = .onDrag   // 스크롤로 키보드 내려감
+        
+        collectionView.allowsSelection = true
+        collectionView.allowsMultipleSelection = true
+        
+        collectionView.keyboardDismissMode = .onDrag
         setActions()
         setBinding()
     }
-
+    
     func setActions() {
         // 뒤로가기
         searchView.getNavigationBar.backButtonPublisher
@@ -81,8 +83,8 @@ private extension SearchViewController {
                 self?.navigationController?.popViewController(animated: true)
             }
             .store(in: &cancellables)
-
-        // 검색바 우측 버튼 탭 → 그때만 검색 실행
+        
+        // 검색 실행
         searchView.getSearchBar.didTapActionButton
             .sink { [weak self] keyword in
                 guard let self else { return }
@@ -90,8 +92,8 @@ private extension SearchViewController {
                 self.dismissKeyboard()
             }
             .store(in: &cancellables)
-
-        // 화면 하단 "완료" 버튼 → 선택 확정
+        
+        // 완료 버튼
         searchView.confirmButtonPublisher
             .sink { [weak self] in
                 guard let self else { return }
@@ -101,12 +103,10 @@ private extension SearchViewController {
             }
             .store(in: &cancellables)
     }
-
-    /// 공통 검색 실행 지점 (버튼 탭에서만 호출)
+    
     func performSearch(with raw: String) {
         let keyword = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !keyword.isEmpty else {
-            // 빈 문자열로 검색 버튼 누르면 결과 초기화만
             goods = []
             collectionView.reloadData()
             viewModel.clearSearchedGoods()
@@ -123,6 +123,7 @@ private extension SearchViewController {
                 self.goods = list
                 self.collectionView.reloadData()
                 
+                // empty 상태 처리
                 self.searchView.getEmptyLabel.isHidden = !list.isEmpty
                 self.collectionView.isHidden = list.isEmpty
             }
@@ -135,13 +136,12 @@ extension SearchViewController: UICollectionViewDataSource, UICollectionViewDele
     func numberOfSections(in collectionView: UICollectionView) -> Int { 1 }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return goods.count
+        goods.count
     }
     
     func collectionView(_ collectionView: UICollectionView,
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let item = goods[indexPath.item]
-        
         let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: GoodsCell.identifier,
             for: indexPath
@@ -155,35 +155,40 @@ extension SearchViewController: UICollectionViewDataSource, UICollectionViewDele
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let item = goods[indexPath.item]
-
-        if let index = tempSelectedGoods.firstIndex(of: item.id) {
-            // 해제
-            tempSelectedGoods.remove(at: index)
-        } else {
-            // 선택
+        
+        // 이미 있으면 무시 (중복 방지)
+        if !tempSelectedGoods.contains(item.id) {
             tempSelectedGoods.append(item.id)
         }
-
-        // 보이는 셀 중 선택된 것만 갱신
-        let selectedSet = Set(tempSelectedGoods)
-        let visible = collectionView.indexPathsForVisibleItems
-        var toReload = Set(visible.filter { selectedSet.contains(goods[$0.item].id) })
-        toReload.insert(indexPath) // 탭한 셀 포함
-        collectionView.reloadItems(at: Array(toReload))
+        
+        if let cell = collectionView.cellForItem(at: indexPath) as? GoodsCell {
+            let order = tempSelectedGoods.firstIndex(of: item.id).map { $0 + 1 }
+            cell.updateSelectionOrder(order)
+        }
     }
+
+    func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
+        let item = goods[indexPath.item]
+        
+        if let index = tempSelectedGoods.firstIndex(of: item.id) {
+            tempSelectedGoods.remove(at: index)
+        }
+        
+        if let cell = collectionView.cellForItem(at: indexPath) as? GoodsCell {
+            cell.updateSelectionOrder(nil)
+        }
+    }
+
 }
 
-// MARK: - 키보드 / Done 처리
+// MARK: - 키보드 처리
 private extension SearchViewController {
     func wireUpKeyboardAccessories() {
-        // 화면 아무데나 탭 → 키보드 내려가게 (셀 탭 방해 안 하도록)
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
         
-        // SearchBar 내부의 UITextField를 재귀적으로 찾아 안전하게 액세서리/델리게이트 설정
         if let tf = searchView.getSearchBar.findTextFieldRecursively() {
-            // 키보드 상단 툴바 제거 + 리턴키는 Done
             tf.inputAccessoryView = nil
             tf.returnKeyType = .done
             tf.enablesReturnKeyAutomatically = true
@@ -199,14 +204,13 @@ private extension SearchViewController {
 
 // MARK: - UITextFieldDelegate
 extension SearchViewController: UITextFieldDelegate {
-    /// 리턴키는 검색하지 않고 키보드만 내림
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         dismissKeyboard()
         return true
     }
 }
 
-// MARK: - KVC 없이 UITextField 찾기
+// MARK: - UITextField Finder
 private extension UIView {
     func findTextFieldRecursively() -> UITextField? {
         if let tf = self as? UITextField { return tf }

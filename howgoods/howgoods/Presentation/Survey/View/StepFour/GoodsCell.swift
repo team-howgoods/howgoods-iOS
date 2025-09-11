@@ -61,6 +61,22 @@ final class GoodsCell: UICollectionViewCell {
         updateSelectionOrder(nil)
     }
     
+    override var isHighlighted: Bool {
+        didSet {
+            UIView.animate(withDuration: 0.15,
+                           delay: 0,
+                           usingSpringWithDamping: 0.6,
+                           initialSpringVelocity: 1,
+                           options: [.allowUserInteraction, .curveEaseInOut],
+                           animations: {
+                self.transform = self.isHighlighted
+                    ? CGAffineTransform(scaleX: 0.95, y: 0.95)
+                    : .identity
+            }, completion: nil)
+        }
+    }
+
+    
     @available(*, unavailable, message: "storyboard is not supported.")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented.")

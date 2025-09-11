@@ -14,6 +14,7 @@ final class SearchView: UIView {
     // MARK: - UI Components
     private let navigationBar: CustomNavigationBar = {
         let v = CustomNavigationBar()
+        v.backgroundColor = .bgAlternative
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
     }()
@@ -142,7 +143,7 @@ private extension SearchView {
     
     // MARK: - setStyles
     func setStyles() {
-        backgroundColor = .white
+        backgroundColor = .bgAlternative
     }
     
     // MARK: - setConstraints
@@ -162,7 +163,7 @@ private extension SearchView {
         collectionView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 16),
         collectionView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
         collectionView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-        collectionView.bottomAnchor.constraint(equalTo: confirmButton.bottomAnchor, constant: -12),
+        collectionView.bottomAnchor.constraint(equalTo: confirmButton.topAnchor, constant: -12),
         
         emptyLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
         emptyLabel.centerYAnchor.constraint(equalTo: centerYAnchor),

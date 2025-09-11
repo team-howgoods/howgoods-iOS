@@ -278,6 +278,11 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
         searchGoodsSubject.send([])
     }
     
+    func sendDummyData() {
+        goodsSubject.send(dummyGoods)
+        mergeGoodsCache(dummyGoods)
+    }
+    
     // MARK: - Helpers
     private func updateSelection(
         subject: CurrentValueSubject<[Int?], Never>,

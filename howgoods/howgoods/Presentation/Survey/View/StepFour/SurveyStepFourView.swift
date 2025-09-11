@@ -12,6 +12,7 @@ final class SurveyStepFourView: UIView {
     // MARK: - UI Components
     private let navigationBar: CustomNavigationBar = {
         let v = CustomNavigationBar()
+        v.backgroundColor = .bgAlternative
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
     }()
@@ -39,7 +40,7 @@ final class SurveyStepFourView: UIView {
         let cv = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
         cv.translatesAutoresizingMaskIntoConstraints = false
         cv.allowsMultipleSelection = false
-        cv.backgroundColor = .white
+        cv.backgroundColor = .clear
         return cv
     }()
     
@@ -68,7 +69,7 @@ final class SurveyStepFourView: UIView {
     var getNavigationBar: CustomNavigationBar { navigationBar }
     var getCollectionView: UICollectionView { collectionView }
     
-    /// dataSource를 받아 레이아웃 생성 (Item 기반으로 수정됨)
+    /// dataSource 기반 레이아웃 생성
     func createLayout(
         dataSource: UICollectionViewDiffableDataSource<
             SurveyStepFourViewController.Section,
@@ -84,7 +85,7 @@ final class SurveyStepFourView: UIView {
             case .selected:
                 return self.makeSelectedSection()
             case .goods(_):
-                return self.makeNormalSection(environment: environment)
+                return self.makeCardSection(environment: environment)
             }
         }
     }
@@ -109,7 +110,7 @@ private extension SurveyStepFourView {
     }
     
     func setStyles() {
-        backgroundColor = .white
+        backgroundColor = .bgAlternative
     }
     
     func setConstraints() {
@@ -120,6 +121,7 @@ private extension SurveyStepFourView {
             
             headTitle.topAnchor.constraint(equalTo: navigationBar.bottomAnchor, constant: 14),
             headTitle.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            headTitle.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             
             searchBar.topAnchor.constraint(equalTo: headTitle.bottomAnchor, constant: 16),
             searchBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
@@ -152,47 +154,26 @@ private extension SurveyStepFourView {
         section.orthogonalScrollingBehavior = .continuous
         section.interGroupSpacing = 4
         section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16)
-        section.boundarySupplementaryItems = []
         return section
     }
     
-    /// 일반 굿즈 섹션 (2열 그리드)
-    func makeNormalSection(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
-        let interItemSpacing: CGFloat = 8
-        let itemsPerRow: CGFloat = 2
-        let availableWidth = environment.container.effectiveContentSize.width
-            - 32 - (itemsPerRow - 1) * interItemSpacing
-        let itemWidth = availableWidth / itemsPerRow
-        let itemHeight = itemWidth + 48
-        
+    /// 굿즈 카드 섹션 (카드 하나씩 세로로 쌓기)
+    func makeCardSection(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
         let itemSize = NSCollectionLayoutSize(
-            widthDimension: .absolute(itemWidth),
-            heightDimension: .absolute(itemHeight)
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .estimated(530) // 카드 높이는 내부 콘텐츠에 따라 자동 계산
         )
         let item = NSCollectionLayoutItem(layoutSize: itemSize)
         
         let groupSize = NSCollectionLayoutSize(
             widthDimension: .fractionalWidth(1.0),
-            heightDimension: .absolute(itemHeight)
+            heightDimension: .estimated(530)
         )
-        let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item, item])
-        group.interItemSpacing = .fixed(interItemSpacing)
+        let group = NSCollectionLayoutGroup.vertical(layoutSize: groupSize, subitems: [item])
         
         let section = NSCollectionLayoutSection(group: group)
-        section.interGroupSpacing = 12
-        section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
-        
-        let header = NSCollectionLayoutBoundarySupplementaryItem(
-            layoutSize: NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .absolute(44)),
-            elementKind: UICollectionView.elementKindSectionHeader,
-            alignment: .top
-        )
-        let footer = NSCollectionLayoutBoundarySupplementaryItem(
-            layoutSize: NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .absolute(60)),
-            elementKind: UICollectionView.elementKindSectionFooter,
-            alignment: .bottom
-        )
-        section.boundarySupplementaryItems = [header, footer]
+        section.interGroupSpacing = 16
+        section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16)
         return section
     }
 }
