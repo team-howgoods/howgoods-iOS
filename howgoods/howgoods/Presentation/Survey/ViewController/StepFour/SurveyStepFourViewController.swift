@@ -29,6 +29,9 @@ final class SurveyStepFourViewController: UIViewController {
     private var expandedSections: [String: Int] = [:] // 각 섹션별 현재 표시 개수
     private var dataSource: UICollectionViewDiffableDataSource<Section, Item>!
 
+    // 캐시된 Goods 조회용 (id -> GoodsItem)
+    private var goodsLookup: [Int: GoodsItem] = [:]
+
     // 스냅샷 적용 중 중복탭 보정
     private var isApplyingSnapshot = false
     private var pendingToggle: String?
@@ -121,6 +124,15 @@ private extension SurveyStepFourViewController {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.applySnapshot(isToggle: false) }
             .store(in: &cancellables)
+
+        // 캐시 바인딩 (검색/목록 어떤 경로든 캐시에 합쳐짐)
+        viewModel.goodsCache
+            .receive(on: RunLoop.main)
+            .sink { [weak self] dict in
+                self?.goodsLookup = dict
+                self?.applySnapshot(isToggle: false)
+            }
+            .store(in: &cancellables)
     }
 }
 
@@ -167,7 +179,7 @@ private extension SurveyStepFourViewController {
         let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: SelectedGoodsCell.identifier, for: indexPath
         ) as! SelectedGoodsCell
-        if let it = groupedGoods.flatMap({ $0.value }).first(where: { $0.id == id }) {
+        if let it = goodsLookup[id] ?? groupedGoods.flatMap({ $0.value }).first(where: { $0.id == id }) {
             cell.configure(with: it)
         }
         cell.didTapRemoveButton
@@ -182,7 +194,7 @@ private extension SurveyStepFourViewController {
         let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: GoodsCell.identifier, for: indexPath
         ) as! GoodsCell
-        if let it = groupedGoods.flatMap({ $0.value }).first(where: { $0.id == id }) {
+        if let it = goodsLookup[id] ?? groupedGoods.flatMap({ $0.value }).first(where: { $0.id == id }) {
             let selectedIds = self.viewModel.requestDTO.goodsSurveyResults.compactMap { $0.goodsId }
             let order = selectedIds.firstIndex(of: it.id).map { $0 + 1 }
             cell.configure(with: it, order: order)

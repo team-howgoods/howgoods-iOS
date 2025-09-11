@@ -51,6 +51,18 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     
     private var cancellables = Set<AnyCancellable>()
     
+    // 모든 GoodsItem 캐시 (id -> GoodsItem)
+    private let goodsCacheSubject = CurrentValueSubject<[Int: GoodsItem], Never>([:])
+    var goodsCache: AnyPublisher<[Int: GoodsItem], Never> {
+        goodsCacheSubject.eraseToAnyPublisher()
+    }
+    func goodsItem(for id: Int) -> GoodsItem? { goodsCacheSubject.value[id] }
+    private func mergeGoodsCache(_ items: [GoodsItem]) {
+        var cache = goodsCacheSubject.value
+        for it in items { cache[it.id] = it }
+        goodsCacheSubject.send(cache)
+    }
+    
     // MARK: - Output
     var animations: AnyPublisher<[Animation], Never> {
         animationsSubject.eraseToAnyPublisher()
@@ -164,6 +176,7 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
             switch result {
             case .success(let list):
                 self?.goodsSubject.send(list)
+                self?.mergeGoodsCache(list) // ✅ 캐시에 병합
             case .failure(let error):
                 print("굿즈 불러오기 실패:", error)
             }
@@ -175,6 +188,7 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
             switch result {
             case .success(let list):
                 self?.searchGoodsSubject.send(list)
+                self?.mergeGoodsCache(list) // ✅ 검색 결과도 캐시에 병합
             case .failure(let error):
                 print("굿즈 검색 실패:", error)
                 self?.searchGoodsSubject.send([])
@@ -263,12 +277,6 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
     func clearSearchedGoods() {
         searchGoodsSubject.send([])
     }
-    
-//    // 더미 데이터를 받는 메서드
-//    func sendDummyData() {
-//        let dummyData = GoodsItem.dummy
-//        goodsSubject.send(dummyData) // `send` 메서드를 통해 더미 데이터를 `Subject`로 보냄
-//    }
     
     // MARK: - Helpers
     private func updateSelection(

@@ -42,7 +42,7 @@ final class SurveyNoPreferenceView: UIView {
     }()
     
     private let homeButton: SolidButton = {
-        let button = SolidButton(frame: .zero, title: "홈으로 이동할게요", color: .primary)
+        let button = SolidButton(frame: .zero, title: "홈으로 이동할게요")
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()

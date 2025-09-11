@@ -43,7 +43,7 @@ final class SurveyView: UIView {
     }()
     
     private let startButton: SolidButton = {
-        let button = SolidButton(frame: .zero, title: "지금 시작하기", color: .primary)
+        let button = SolidButton(frame: .zero, title: "지금 시작하기")
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
