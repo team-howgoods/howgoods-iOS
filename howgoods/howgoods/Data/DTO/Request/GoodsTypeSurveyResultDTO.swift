@@ -6,5 +6,5 @@
 //
 
 struct GoodsTypeSurveyResultDTO: Encodable {
-    let goodsTypeId: Int
+    let goodsTypeId: Int?
 }

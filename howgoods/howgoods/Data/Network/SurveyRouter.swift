@@ -10,8 +10,11 @@ import Foundation
 
 enum SurveyRouter: URLRequestConvertible {
     case fetchAnimations
-    case fetchGoods
+    case fetchGoodsType
     case fetchCharacters([Int])
+    case fetchGoods([Int], [Int])
+    case searchGoods(String)
+    case submitSurvey(SubmitSurveyRequestDTO)
     
     private var baseURL: URL {
         return Bundle.main.baseAPIURL
@@ -19,8 +22,10 @@ enum SurveyRouter: URLRequestConvertible {
     
     private var method: HTTPMethod {
         switch self {
-        case .fetchAnimations, .fetchGoods, .fetchCharacters:
+        case .fetchAnimations, .fetchGoodsType, .fetchCharacters, .fetchGoods, .searchGoods:
             return .get
+        case .submitSurvey:
+            return .post
         }
     }
     
@@ -28,37 +33,49 @@ enum SurveyRouter: URLRequestConvertible {
         switch self {
         case .fetchAnimations:
             return "/api/survey/animations"
-        case .fetchGoods:
+        case .fetchGoodsType:
             return "/api/survey/goods-types"
         case .fetchCharacters:
             return "/api/survey/characters"
+        case .fetchGoods:
+            return "/api/survey/goods"
+        case .searchGoods:
+            return "/api/survey/search/goods"
+        case .submitSurvey:
+            return "/api/survey"
         }
     }
     
     func asURLRequest() throws -> URLRequest {
-        var url = baseURL.appendingPathComponent(path)
+        let url = baseURL.appendingPathComponent(path)
+        var request = URLRequest(url: url)
+        request.method = method
         
         switch self {
         case .fetchCharacters(let ids):
             var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            // Swagger처럼 animationIds=1&animationIds=2&animationIds=3 형식으로 조립
             components?.queryItems = ids.map { URLQueryItem(name: "animationIds", value: "\($0)") }
-            if let composedURL = components?.url {
-                url = composedURL
-            }
+            if let composedURL = components?.url { request.url = composedURL }
+            
+        case .fetchGoods(let animationIds, let goodsTypeIds):
+            var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            var query: [URLQueryItem] = []
+            query.append(contentsOf: animationIds.map { URLQueryItem(name: "animationIds", value: "\($0)") })
+            query.append(contentsOf: goodsTypeIds.map { URLQueryItem(name: "goodsTypeIds", value: "\($0)") })
+            components?.queryItems = query
+            if let composedURL = components?.url { request.url = composedURL }
+            
+        case .searchGoods(let keyword):
+            var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            components?.queryItems = [URLQueryItem(name: "keyword", value: keyword)]
+            if let composedURL = components?.url { request.url = composedURL }
+            
+        case .submitSurvey(let dto):
+            request = try JSONEncoding.default.encode(request, with: dto.toDictionary())
+            
         default:
             break
         }
-        
-        var request = URLRequest(url: url)
-        request.method = method
-        
-        // GET 요청일 때는 Content-Type을 안 붙여도 됨
-        // 붙이면 서버에 따라 403 나오는 경우 있음
-        if method != .get {
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        }
-        
         return request
     }
 }

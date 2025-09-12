@@ -11,7 +11,7 @@ import UIKit
 final class GoodsTypeCell: UICollectionViewCell {
     static let identifier = "GoodsTypeCell"
 
-    private let imageView = ImageView(cornerRadius: 8)
+    private let imageView = ImageView(cornerRadius: 16)
 
     private let nameLabel: UILabel = {
         let label = UILabel()
@@ -51,9 +51,12 @@ final class GoodsTypeCell: UICollectionViewCell {
 
 private extension GoodsTypeCell {
     func configure() {
-        contentView.addSubviews(imageView, nameLabel)
+        contentView.addSubviews(
+            imageView,
+            nameLabel
+        )
         backgroundColor = .clear
-        layer.cornerRadius = 8
+        layer.cornerRadius = 16
         layer.masksToBounds = true
 
         NSLayoutConstraint.activate([
@@ -78,6 +81,6 @@ private extension GoodsTypeCell {
     func updateSelectionUI() {
         layer.borderWidth = isSelected ? 5 : 0
         layer.borderColor = isSelected ? UIColor.primary.cgColor : UIColor.clear.cgColor
-        layer.cornerRadius = 8
+        layer.cornerRadius = 16
     }
 }

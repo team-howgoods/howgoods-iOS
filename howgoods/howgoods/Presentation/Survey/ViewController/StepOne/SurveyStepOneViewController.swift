@@ -25,7 +25,7 @@ final class SurveyStepOneViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configure()
-        viewModel.loadAnimations()
+        self.viewModel.loadAnimations()
     }
     
     override func viewDidLayoutSubviews() {
@@ -47,14 +47,19 @@ final class SurveyStepOneViewController: UIViewController {
     // Coordinator에서 주입할 이벤트 클로저
     var didTapNext: (() -> Void)?
     var didTapSkip: (() -> Void)?
+    var didTapHome: (() -> Void)?
 }
 
 // MARK: - UI Methods
 private extension SurveyStepOneViewController {
     func configure() {
+        setStyles()
         setCollectionView()
         setActions()
         setBinding()
+    }
+    func setStyles() {
+        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = false
     }
     
     // MARK: - CollectionView 설정
@@ -74,16 +79,24 @@ private extension SurveyStepOneViewController {
     func setActions() {
         surveyStepOneView.getTwoButton.primaryTapPublisher
             .sink {
-                print("완료 클릭, requestDTO:", self.viewModel.requestDTO)
-                self.didTapNext?()
+                print("완료 클릭")
+                if self.viewModel.requestDTO.animationSurveyResults.contains(where: { $0.animationId == nil }) {
+                    // "없어요" 선택됨 → skip 로직 실행
+                    self.viewModel.reset(step: .animation)
+                    self.didTapSkip?()
+                } else {
+                    // 정상 선택됨 → 다음 단계
+                    self.viewModel.loadCharacters()
+                    self.didTapNext?()
+                }
             }
             .store(in: &cancellables)
         
         surveyStepOneView.getTwoButton.skipButtonTapPublisher
             .sink {
                 print("다음에 할께요 클릭")
+                self.didTapHome?()
                 self.viewModel.reset(step: .animation)
-                self.didTapSkip?()
             }
             .store(in: &cancellables)
     }
@@ -124,7 +137,7 @@ extension SurveyStepOneViewController: UICollectionViewDataSource {
         }
         
         if indexPath.item == 0 {
-            let isSelected = viewModel.requestDTO.animationSurveyResults.contains { $0.animationId == -1 }
+            let isSelected = viewModel.requestDTO.animationSurveyResults.contains { $0.animationId == nil }
             cell.configure(title: "좋아하는 애니메이션이 없어요", isSelected: isSelected)
         } else {
             let item = animations[indexPath.item - 1]
@@ -140,10 +153,10 @@ extension SurveyStepOneViewController: UICollectionViewDataSource {
 extension SurveyStepOneViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if indexPath.item == 0 {
-            viewModel.select(step: .animation, id: -1)
+            // "좋아하는 애니메이션이 없어요" → nil 삽입
+            viewModel.select(step: .animation, id: nil)
         } else {
             let item = animations[indexPath.item - 1]
-            
             if viewModel.requestDTO.animationSurveyResults.contains(where: { $0.animationId == item.id }) {
                 viewModel.deselect(step: .animation, id: item.id)
             } else {
@@ -152,3 +165,4 @@ extension SurveyStepOneViewController: UICollectionViewDelegate {
         }
     }
 }
+

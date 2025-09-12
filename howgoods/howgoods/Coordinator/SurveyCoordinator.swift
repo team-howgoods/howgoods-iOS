@@ -19,17 +19,6 @@ final class SurveyCoordinator: Coordinator {
     }
     
     func start() {
-        let surveyVC = SurveyViewController(viewModel: viewModel)
-        
-        surveyVC.didTapStart = { [weak self] in
-            self?.showStepOne()
-        }
-        
-        navigationController.pushViewController(surveyVC, animated: true)
-    }
-    
-    private func showStepOne() {
-        
         let stepOneVC = SurveyStepOneViewController(viewModel: viewModel)
 
         stepOneVC.didTapNext = { [weak self] in
@@ -40,7 +29,20 @@ final class SurveyCoordinator: Coordinator {
             self?.showNoPreference()
         }
         
+        stepOneVC.didTapHome = { [weak self] in
+            self?.onFinish?()
+        }
+        
         navigationController.pushViewController(stepOneVC, animated: true)
+        
+        // TODO: 안쓸 것 같음 일딴 보류
+//        let surveyVC = SurveyViewController(viewModel: viewModel)
+//        
+//        surveyVC.didTapStart = { [weak self] in
+//            self?.showStepOne()
+//        }
+//        
+//        navigationController.pushViewController(surveyVC, animated: true)
     }
     
     private func showStepTwo() {
@@ -70,6 +72,10 @@ final class SurveyCoordinator: Coordinator {
             self?.showSearchView()
         }
         
+        stepFourVC.didTapHome = { [weak self] in
+            self?.onFinish?()
+        }
+        
         navigationController.pushViewController(stepFourVC, animated: true)
     }
     
@@ -79,7 +85,7 @@ final class SurveyCoordinator: Coordinator {
     }
     
     private func showNoPreference() {
-        let noPreferenceVC = SurveyNoPreferenceViewController()
+        let noPreferenceVC = SurveyNoPreferenceViewController(viewModel: viewModel)
         
         noPreferenceVC.didTapHome = { [weak self] in
             self?.onFinish?()

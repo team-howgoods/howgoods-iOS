@@ -1,0 +1,118 @@
+//
+//  SelectedGoodsCell.swift
+//  howgoods
+//
+//  Created by 양원식 on 9/6/25.
+//
+import UIKit
+import Combine
+
+final class SelectedGoodsCell: UICollectionViewCell {
+    // MARK: - Properties
+    static let identifier = "SelectedGoodsCell"
+
+    private var cancellables = Set<AnyCancellable>()
+    private var id: Int?
+    private let removeButtonSubject = PassthroughSubject<Int, Never>()
+    
+    var didTapRemoveButton: AnyPublisher<Int, Never> {
+        removeButtonSubject.eraseToAnyPublisher()
+    }
+
+    // MARK: - UI Components
+    private let imageView = ImageView(cornerRadius: 8)
+
+    private let goodsNameLabel: UILabel = {
+        let label = UILabel()
+        label.setText("", style: .captionSemibold11, color: .white)
+        label.textAlignment = .center
+        label.numberOfLines = 2
+        label.lineBreakMode = .byTruncatingTail
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    private let removeButton: UIButton = {
+        var config = UIButton.Configuration.plain()
+        config.image = UIImage(systemName: "xmark.circle.fill")
+        config.baseForegroundColor = .iconDark
+        let button = UIButton(configuration: config, primaryAction: nil)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+
+    // MARK: - Initializer
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        configure()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        cancellables.removeAll()  // 이전 구독 제거
+        imageView.reset()  // 이미지 초기화
+        goodsNameLabel.text = nil  // 텍스트 초기화
+    }
+
+    // MARK: - Public Methods
+    func configure(with item: GoodsItem) {
+        id = item.id
+        goodsNameLabel.setText(item.name, style: .captionSemibold11, color: .white)
+        imageView.setImage(urlOrName: item.imageUrl)
+        
+        setBindings()
+    }
+}
+
+// MARK: - Configure Methods
+private extension SelectedGoodsCell {
+    func configure() {
+        setHierarchy()
+        setStyles()
+        setConstraints()
+    }
+
+    func setHierarchy() {
+        contentView.addSubviews(
+            imageView,
+            goodsNameLabel,
+            removeButton
+        )
+        contentView.bringSubviewToFront(removeButton)
+    }
+
+    func setStyles() {
+        backgroundColor = .clear
+    }
+
+    func setConstraints() {
+        NSLayoutConstraint.activate([
+            imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            imageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+
+            goodsNameLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 6),
+            goodsNameLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -6),
+            goodsNameLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -6),
+
+            removeButton.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            removeButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
+            removeButton.widthAnchor.constraint(equalToConstant: 20),
+            removeButton.heightAnchor.constraint(equalToConstant: 20)
+        ])
+    }
+
+    func setBindings() {
+        removeButton.publisher(for: .touchUpInside)
+            .sink { [weak self] in
+                guard let self, let id = self.id else { return }
+                self.removeButtonSubject.send(id)
+            }
+            .store(in: &cancellables)
+    }
+}

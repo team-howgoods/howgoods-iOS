@@ -69,6 +69,7 @@ final class SurveyStepTwoView: UIView {
         collectionView.register(TitleHeaderView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: TitleHeaderView.identifier)
         
         collectionView.allowsMultipleSelection = true
+        collectionView.backgroundColor = .white
         
         return collectionView
     }()

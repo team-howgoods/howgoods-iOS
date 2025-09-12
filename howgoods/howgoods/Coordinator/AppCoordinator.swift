@@ -44,22 +44,12 @@ final class AppCoordinator: Coordinator {
     }
     
     func start() {
-        #if DEBUG
-        // 개발 환경에서는 항상 로그인 → 설문부터 시작하도록 플래그 초기화
+        // 항상 로그인 안 된 상태처럼 시작
+        // TODO: 로그인 상태 확인하려면 바로 밑에 줄 코드 지워주세요 !
+        TokenStorage.clear() // 토큰 제거
+        
         UserDefaultsHelper.hasSeenSurvey = false
-        showLogin()
-        #else
-        if let _ = TokenStorage.loadToken(),
-           let _ = TokenStorage.loadLoginType() {
-            if UserDefaultsHelper.hasSeenSurvey {
-                startMainTabs()
-            } else {
-                startSurvey()
-            }
-        } else {
-            showLogin()
-        }
-        #endif
+        startMainTabs()
 
         window?.rootViewController = navigationController
         window?.makeKeyAndVisible()

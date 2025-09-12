@@ -31,9 +31,11 @@ final class SurveyStepThreeViewController: UIViewController {
             return nil
         }
     }
+    
     private var selectedIDs: [Int] {
-        viewModel.requestDTO.goodsTypeSurveyResults.map { $0.goodsTypeId }
+        viewModel.requestDTO.goodsTypeSurveyResults.compactMap { $0.goodsTypeId }
     }
+
 
     // Coordinator 콜백
     var didTapNext: (() -> Void)?
@@ -55,17 +57,21 @@ final class SurveyStepThreeViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configure()
-        viewModel.loadGoodsTypes()
     }
 }
 
 private extension SurveyStepThreeViewController {
     func configure() {
         setCollectionView()
+        setStyles()
         setActions()
         setBinding()
     }
 
+    func setStyles() {
+        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = false
+    }
+    
     func setCollectionView() {
         // 세로 스크롤 그리드(레이아웃은 View가 제공)
         let layout = UICollectionViewCompositionalLayout { [weak self] _, _ in
@@ -82,7 +88,9 @@ private extension SurveyStepThreeViewController {
         surveyStepThreeView.nextButtonPublisher
             .sink { [weak self] in
                 guard let self else { return }
-                print("다음 클릭, requestDTO:", self.viewModel.requestDTO)
+                print("다음 클릭")
+                viewModel.loadGoods()
+                //viewModel.sendDummyData()
                 self.didTapNext?()
             }
             .store(in: &cancellables)
@@ -90,6 +98,7 @@ private extension SurveyStepThreeViewController {
         // 뒤로가기
         surveyStepThreeView.getNavigationBar.backButtonPublisher
             .sink { [weak self] in
+                print("뒤로가기 클릭")
                 self?.viewModel.reset(step: .character)
                 self?.navigationController?.popViewController(animated: true)
             }

@@ -8,6 +8,7 @@
 import UIKit
 import Combine
 
+// TODO: 안쓸 것 같음 일딴 보류
 final class SurveyView: UIView {
     // MARK: - Properties
     
@@ -42,7 +43,7 @@ final class SurveyView: UIView {
     }()
     
     private let startButton: SolidButton = {
-        let button = SolidButton(frame: .zero, title: "지금 시작하기", color: .primary)
+        let button = SolidButton(frame: .zero, title: "지금 시작하기")
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()

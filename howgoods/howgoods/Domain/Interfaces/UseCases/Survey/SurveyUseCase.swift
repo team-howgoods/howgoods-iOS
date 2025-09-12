@@ -23,4 +23,16 @@ final class SurveyUseCase: SurveyUseCaseProtocol {
     func fetchGoodsTypes(completion: @escaping (Result<[GoodsType], Error>) -> Void) {
         repository.fetchGoodsTypes(completion: completion)
     }
+    
+    func fetchGoods(animationIds: [Int], goodsTypeIds: [Int], completion: @escaping (Result<[GoodsItem], Error>) -> Void) {
+        repository.fetchGoods(animationIds: animationIds, goodsTypeIds: goodsTypeIds, completion: completion)
+    }
+    
+    func searchGoods(keyword: String, completion: @escaping (Result<[GoodsItem], Error>) -> Void) {
+        repository.searchGoods(keyword: keyword, completion: completion)
+    }
+    
+    func submitSurvey(requestDTO: SubmitSurveyRequestDTO, completion: @escaping (Result<SubmitSurveyResponseDTO, Error>) -> Void) {
+        repository.submitSurvey(requestDTO: requestDTO, completion: completion)
+    }
 }

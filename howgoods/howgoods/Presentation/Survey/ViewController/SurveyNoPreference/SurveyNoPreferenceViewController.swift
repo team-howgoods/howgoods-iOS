@@ -13,6 +13,7 @@ final class SurveyNoPreferenceViewController: UIViewController {
     // MARK: - Properties
     private let surveyNoPreferenceView = SurveyNoPreferenceView()
     private var cancellables = Set<AnyCancellable>()
+    private let viewModel: SurveyViewModel
     
     // MARK: - Lifecycle
     
@@ -27,7 +28,8 @@ final class SurveyNoPreferenceViewController: UIViewController {
     
     // MARK: - Initializer
     
-    init() {
+    init(viewModel: SurveyViewModel) {
+        self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -59,7 +61,23 @@ private extension SurveyNoPreferenceViewController {
         surveyNoPreferenceView.homeButtonPublisher
             .sink {
                 print("홈 화면 이동")
-                self.didTapHome?()
+                self.viewModel.submitSurvey { result in
+                    switch result {
+                    case .success(let response):
+                        print("서버 응답:", response)
+                        self.didTapHome?()
+                    case .failure(let error):
+                        print("제출 실패:", error)
+                    }
+                }
+            }
+            .store(in: &cancellables)
+        
+        // 뒤로가기
+        surveyNoPreferenceView.getNavigationBar.backButtonPublisher
+            .sink { [weak self] in
+                print("뒤로가기 클릭")
+                self?.navigationController?.popViewController(animated: true)
             }
             .store(in: &cancellables)
     }

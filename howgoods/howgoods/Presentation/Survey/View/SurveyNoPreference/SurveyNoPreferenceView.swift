@@ -12,6 +12,13 @@ final class SurveyNoPreferenceView: UIView {
     // MARK: - Properties
     
     // MARK: - UI Components
+    private let navigationBar: CustomNavigationBar = {
+        let v = CustomNavigationBar()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
+    }()
+
+    
     private let contentView: UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -35,7 +42,7 @@ final class SurveyNoPreferenceView: UIView {
     }()
     
     private let homeButton: SolidButton = {
-        let button = SolidButton(frame: .zero, title: "홈으로 이동할게요", color: .primary)
+        let button = SolidButton(frame: .zero, title: "홈으로 이동할게요")
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
@@ -43,6 +50,7 @@ final class SurveyNoPreferenceView: UIView {
     var homeButtonPublisher: AnyPublisher<Void, Never> {
         homeButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
     }
+    var getNavigationBar: CustomNavigationBar { navigationBar }
     
     // MARK: - Initializer
     override init(frame: CGRect) {
@@ -71,6 +79,7 @@ private extension SurveyNoPreferenceView {
     // MARK: - setHierarchy
     func setHierarchy() {
         addSubviews(
+            navigationBar,
             contentView
         )
         
@@ -89,6 +98,9 @@ private extension SurveyNoPreferenceView {
     // MARK: - setConstraints
     func setConstraints() {
         NSLayoutConstraint.activate([
+            navigationBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            navigationBar.leadingAnchor.constraint(equalTo: leadingAnchor),
+            navigationBar.trailingAnchor.constraint(equalTo: trailingAnchor),
             
             contentView.centerXAnchor.constraint(equalTo: centerXAnchor),
             contentView.centerYAnchor.constraint(equalTo: centerYAnchor),

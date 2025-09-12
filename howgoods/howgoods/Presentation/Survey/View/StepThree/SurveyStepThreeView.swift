@@ -66,6 +66,7 @@ final class SurveyStepThreeView: UIView {
         cv.register(GoodsTypeCell.self,
                     forCellWithReuseIdentifier: GoodsTypeCell.identifier)
         cv.allowsMultipleSelection = true
+        cv.backgroundColor = .white
         return cv
     }()
 
