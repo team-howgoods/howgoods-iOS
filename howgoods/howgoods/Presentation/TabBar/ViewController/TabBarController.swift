@@ -50,9 +50,9 @@ final class TabBarController: UITabBarController {
             .sink { actions.onAllGoods() }
             .store(in: &cancellables)
 
-        customTabBarView.goodsMapButtonPublisher
-            .sink { actions.onGoodsMap() }
-            .store(in: &cancellables)
+//        customTabBarView.goodsMapButtonPublisher
+//            .sink { actions.onGoodsMap() }
+//            .store(in: &cancellables)
 
         customTabBarView.myPageButtonPublisher
             .sink { actions.onMyPage() }

@@ -25,7 +25,8 @@ final class TabBarView: UIView {
     // MARK: - Private Buttons
     private lazy var homeButton: UIButton = makeButton(title: "홈", imageName: "Home")
     private lazy var allGoodsButton: UIButton = makeButton(title: "전체 굿즈", imageName: "plusButton")
-    private lazy var goodsMapButton: UIButton = makeButton(title: "덕질 지도", imageName: "plusButton")
+    // TODO: 덕질지도 패치 전까지 주석문 !
+    // private lazy var goodsMapButton: UIButton = makeButton(title: "덕질 지도", imageName: "plusButton")
     private lazy var myPageButton: UIButton = makeButton(title: "마이페이지", imageName: "MyPage")
     
     // MARK: - Public Publishers
@@ -35,9 +36,9 @@ final class TabBarView: UIView {
     var allGoodsButtonPublisher: AnyPublisher<Void, Never> {
         allGoodsButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
     }
-    var goodsMapButtonPublisher: AnyPublisher<Void, Never> {
-        goodsMapButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
-    }
+//    var goodsMapButtonPublisher: AnyPublisher<Void, Never> {
+//        goodsMapButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
+//    }
     var myPageButtonPublisher: AnyPublisher<Void, Never> {
         myPageButton.publisher(for: .touchUpInside).eraseToAnyPublisher()
     }
@@ -86,7 +87,7 @@ private extension TabBarView {
         tabBarstackView.addArrangedSubviews(
             homeButton,
             allGoodsButton,
-            goodsMapButton,
+//            goodsMapButton,
             myPageButton
         )
         
