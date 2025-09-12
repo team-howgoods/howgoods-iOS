@@ -29,6 +29,10 @@ final class SurveyCoordinator: Coordinator {
             self?.showNoPreference()
         }
         
+        stepOneVC.didTapHome = { [weak self] in
+            self?.onFinish?()
+        }
+        
         navigationController.pushViewController(stepOneVC, animated: true)
         
         // TODO: 안쓸 것 같음 일딴 보류

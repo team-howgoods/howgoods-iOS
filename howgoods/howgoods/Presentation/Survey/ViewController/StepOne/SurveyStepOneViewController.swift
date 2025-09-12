@@ -47,6 +47,7 @@ final class SurveyStepOneViewController: UIViewController {
     // Coordinator에서 주입할 이벤트 클로저
     var didTapNext: (() -> Void)?
     var didTapSkip: (() -> Void)?
+    var didTapHome: (() -> Void)?
 }
 
 // MARK: - UI Methods
@@ -94,7 +95,7 @@ private extension SurveyStepOneViewController {
         surveyStepOneView.getTwoButton.skipButtonTapPublisher
             .sink {
                 print("다음에 할께요 클릭")
-                self.didTapSkip?()
+                self.didTapHome?()
                 self.viewModel.reset(step: .animation)
             }
             .store(in: &cancellables)
