@@ -176,7 +176,7 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
             switch result {
             case .success(let list):
                 self?.goodsSubject.send(list)
-                self?.mergeGoodsCache(list) // ✅ 캐시에 병합
+                self?.mergeGoodsCache(list) // 캐시에 병합
             case .failure(let error):
                 print("굿즈 불러오기 실패:", error)
             }
@@ -188,7 +188,7 @@ final class SurveyViewModel: SurveyViewModelInput, SurveyViewModelOutput {
             switch result {
             case .success(let list):
                 self?.searchGoodsSubject.send(list)
-                self?.mergeGoodsCache(list) // ✅ 검색 결과도 캐시에 병합
+                self?.mergeGoodsCache(list) // 검색 결과도 캐시에 병합
             case .failure(let error):
                 print("굿즈 검색 실패:", error)
                 self?.searchGoodsSubject.send([])

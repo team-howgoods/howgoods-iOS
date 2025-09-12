@@ -10,7 +10,7 @@ import Combine
 struct TabBarActions {
     var onHome: () -> Void
     var onAllGoods: () -> Void
-    var onGoodsMap: () -> Void
+//    var onGoodsMap: () -> Void
     var onMyPage: () -> Void
     var cancellables = Set<AnyCancellable>()
 }

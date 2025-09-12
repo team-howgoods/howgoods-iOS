@@ -12,7 +12,7 @@ final class TabBarCoordinator: Coordinator {
     let navigationController: UINavigationController
     private var homeCoordinator: HomeCoordinator!
     private var allGoodsCoordinator: AllGoodsCoordinator!
-    private var goodsMapCoordinator: GoodsMapCoordinator!
+//    private var goodsMapCoordinator: GoodsMapCoordinator!
     private var myPageCoordinator: MyPageCoordinator!
 
     init(navigationController: UINavigationController) {
@@ -25,26 +25,26 @@ final class TabBarCoordinator: Coordinator {
         // 각 탭 Coordinator 생성
         homeCoordinator = HomeCoordinator(navigationController: UINavigationController())
         allGoodsCoordinator = AllGoodsCoordinator(navigationController: UINavigationController())
-        goodsMapCoordinator = GoodsMapCoordinator(navigationController: UINavigationController())
+//        goodsMapCoordinator = GoodsMapCoordinator(navigationController: UINavigationController())
         myPageCoordinator = MyPageCoordinator(navigationController: UINavigationController())
 
         homeCoordinator.start()
         allGoodsCoordinator.start()
-        goodsMapCoordinator.start()
+//        goodsMapCoordinator.start()
         myPageCoordinator.start()
 
         tabBarVC.viewControllers = [
             homeCoordinator.navigationController,
             allGoodsCoordinator.navigationController,
-            goodsMapCoordinator.navigationController,
+//            goodsMapCoordinator.navigationController,
             myPageCoordinator.navigationController
         ]
 
         tabBarVC.bindActions(TabBarActions(
             onHome: { tabBarVC.selectedIndex = 0 },
             onAllGoods: { tabBarVC.selectedIndex = 1 },
-            onGoodsMap: { tabBarVC.selectedIndex = 2 },
-            onMyPage: { tabBarVC.selectedIndex = 3 }
+//            onGoodsMap: { tabBarVC.selectedIndex = 2 },
+            onMyPage: { tabBarVC.selectedIndex = 2 }
         ))
 
         navigationController.setViewControllers([tabBarVC], animated: false)
@@ -57,8 +57,8 @@ final class TabBarCoordinator: Coordinator {
         switch destination {
         case .home: index = 0
         case .allGoods: index = 1
-        case .goodsMap: index = 2
-        case .myPage: index = 3
+//        case .goodsMap: index = 2
+        case .myPage: index = 2
         }
 
         tabBarVC.selectedIndex = index

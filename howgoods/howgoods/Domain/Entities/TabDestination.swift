@@ -8,6 +8,6 @@
 enum TabDestination {
     case home
     case allGoods
-    case goodsMap
+//    case goodsMap
     case myPage
 }

@@ -16,10 +16,7 @@ final class SurveyStepThreeViewController: UIViewController {
     private let viewModel: SurveyViewModel
     private var cancellables = Set<AnyCancellable>()
 
-
-    // “전체 선택” + 일반 아이템
     private enum Item {
-        case selectAll
         case goods(GoodsType)
     }
     private lazy var items: [Item] = []
@@ -35,7 +32,6 @@ final class SurveyStepThreeViewController: UIViewController {
     private var selectedIDs: [Int] {
         viewModel.requestDTO.goodsTypeSurveyResults.compactMap { $0.goodsTypeId }
     }
-
 
     // Coordinator 콜백
     var didTapNext: (() -> Void)?
@@ -73,12 +69,11 @@ private extension SurveyStepThreeViewController {
     }
     
     func setCollectionView() {
-        // 세로 스크롤 그리드(레이아웃은 View가 제공)
         let layout = UICollectionViewCompositionalLayout { [weak self] _, _ in
             return self?.surveyStepThreeView.createGoodsTypeSection()
         }
         collectionView.collectionViewLayout = layout
-        collectionView.allowsMultipleSelection = true // 수동 선택은 VM에서 3개 제한
+        collectionView.allowsMultipleSelection = true
         collectionView.dataSource = self
         collectionView.delegate   = self
     }
@@ -88,9 +83,7 @@ private extension SurveyStepThreeViewController {
         surveyStepThreeView.nextButtonPublisher
             .sink { [weak self] in
                 guard let self else { return }
-                print("다음 클릭")
                 viewModel.loadGoods()
-                //viewModel.sendDummyData()
                 self.didTapNext?()
             }
             .store(in: &cancellables)
@@ -98,24 +91,47 @@ private extension SurveyStepThreeViewController {
         // 뒤로가기
         surveyStepThreeView.getNavigationBar.backButtonPublisher
             .sink { [weak self] in
-                print("뒤로가기 클릭")
                 self?.viewModel.reset(step: .character)
                 self?.navigationController?.popViewController(animated: true)
+            }
+            .store(in: &cancellables)
+
+        // 전체 선택 버튼
+        surveyStepThreeView.getCheckButton.tapPublisher
+            .sink { [weak self] _ in
+                self?.toggleSelectAll()
             }
             .store(in: &cancellables)
     }
 
     func setBinding() {
-        // 선택 상태 변경 시 셀 동기화(버튼 타이틀 갱신 X)
+        // 선택 상태 변경 시 UI 동기화
         viewModel.selectedGoodsTypes
             .receive(on: RunLoop.main)
-            .sink { [weak self] selected in
+            .sink { [weak self] _ in
                 guard let self else { return }
-                
-                let count = selected.count
-                self.surveyStepThreeView.setNextButtonEnabled(count > 0)
-                
-                self.collectionView.reloadData()
+
+                let count = selectedIDs.count
+                surveyStepThreeView.setNextButtonEnabled(count > 0)
+
+                let allSelected = isAllSelected()
+                surveyStepThreeView.setCheckButtonSelected(allSelected)
+
+                // 셀 선택 상태만 갱신
+                for case let cell as GoodsTypeCell in collectionView.visibleCells {
+                    if let indexPath = collectionView.indexPath(for: cell),
+                       indexPath.item < items.count,
+                       case .goods(let model) = items[indexPath.item] {
+                        
+                        let isSelected = selectedIDs.contains(model.goodsTypeId)
+                        if isSelected {
+                            collectionView.selectItem(at: indexPath, animated: false, scrollPosition: [])
+                        } else {
+                            collectionView.deselectItem(at: indexPath, animated: false)
+                        }
+                        cell.isSelected = isSelected
+                    }
+                }
             }
             .store(in: &cancellables)
         
@@ -124,7 +140,7 @@ private extension SurveyStepThreeViewController {
             .receive(on: RunLoop.main)
             .sink { [weak self] list in
                 guard let self else { return }
-                self.items = [.selectAll] + list.map { .goods($0) }
+                self.items = list.map { .goods($0) }
                 self.collectionView.reloadData()
             }
             .store(in: &cancellables)
@@ -158,30 +174,13 @@ extension SurveyStepThreeViewController: UICollectionViewDataSource {
 
     func collectionView(_ collectionView: UICollectionView,
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-
         switch items[indexPath.item] {
-        case .selectAll:
-            let cell = collectionView.dequeueReusableCell(
-                withReuseIdentifier: SelectAllCell.identifier, for: indexPath
-            ) as! SelectAllCell
-
-            // 선택상태 동기화
-            if isAllSelected() {
-                collectionView.selectItem(at: indexPath, animated: false, scrollPosition: [])
-                cell.isSelected = true
-            } else {
-                collectionView.deselectItem(at: indexPath, animated: false)
-                cell.isSelected = false
-            }
-            return cell
-
         case .goods(let model):
             let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: GoodsTypeCell.identifier, for: indexPath
             ) as! GoodsTypeCell
             cell.configure(goodsType: model)
 
-            // 선택상태 동기화
             if selectedIDs.contains(model.goodsTypeId) {
                 collectionView.selectItem(at: indexPath, animated: false, scrollPosition: [])
                 cell.isSelected = true
@@ -198,8 +197,6 @@ extension SurveyStepThreeViewController: UICollectionViewDataSource {
 extension SurveyStepThreeViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         switch items[indexPath.item] {
-        case .selectAll:
-            toggleSelectAll()
         case .goods(let model):
             viewModel.select(step: .goodsType, id: model.goodsTypeId)
         }
@@ -207,8 +204,6 @@ extension SurveyStepThreeViewController: UICollectionViewDelegate {
 
     func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
         switch items[indexPath.item] {
-        case .selectAll:
-            toggleSelectAll() // 토글 성격
         case .goods(let model):
             viewModel.deselect(step: .goodsType, id: model.goodsTypeId)
         }
